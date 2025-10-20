@@ -116,4 +116,80 @@ contract ProduceMarket {
         produceItems[_id].currentStatus = _newStatus;
         emit StatusUpdated(_id, _newStatus, msg.sender);
     }
+
+    function buyProduce(uint256 _id) public payable {
+        ProduceItem storage item = produceItems[_id];
+        require(item.id != 0, "Produce item does not exist.");
+        
+        //Check for sufficient payment
+        require(msg.value >= item.priceinRupees, "Insufficient payment sent.");
+
+        //Prevent buying an already sold item
+        require(
+            keccak256(abi.encodePacked(item.currentStatus)) != keccak256(abi.encodePacked("Sold")),"Produce is already sold.");
+        
+        address payable seller = payable(item.currentSeller);
+        uint256 price = item.priceinRupees;
+        
+        //Transfer the funds to the seller
+        (bool success, ) = seller.call{value: price}("");  // Note: The use of call is the recommended way to send Ether
+        require(success, "Ether transfer failed.");
+
+        //Update the item state to reflect the sale
+        item.currentStatus = "Sold";
+        // The buyer is now technically the owner of the physical goods, 
+        // but for simplicity in this contract, we keep 'currentSeller' as the last one paid. 
+        // In a complex system, this would be updated to the buyer or nullified.
+
+        //Record the Sale Transaction History (Payment History)
+        produceSaleHistory[_id].push(
+            SaleRecord(
+                _id,
+                msg.sender, // Buyer
+                item.currentSeller, // Seller
+                price, // Price paid
+                block.timestamp
+            )
+        );
+
+        emit ProduceSold(_id, msg.sender, item.currentSeller, price);
+        
+        //Refund any overpayment
+        if (msg.value > price) {
+            (bool refundSuccess, ) = payable(msg.sender).call{value: msg.value - price}("");
+            require(refundSuccess, "Refund failed.");
+        }
+    }
+
+    
+    function getProduceDetails(
+        uint256 _id
+    ) public view returns (
+        uint256 id,
+        string memory name,
+        address originalFarmer,
+        address currentSeller,
+        string memory currentStatus,
+        uint256 priceInWei,
+        string memory originFarm,
+        string memory qrCode // The data customers scan
+    ) {
+        require(produceItems[_id].id != 0, "Produce item does not exist");
+        ProduceItem storage item = produceItems[_id];
+        return (
+            item.id,
+            item.name,
+            item.originalFarmer,
+            item.currentSeller,
+            item.currentStatus,
+            item.priceinRupees,
+            item.originFarm,
+            item.QRCode
+        );
+    }
+    
+    function getSaleHistory(uint256 _id) public view returns (SaleRecord[] memory) {
+        require(produceItems[_id].id != 0, "Produce item does not exist");
+        return produceSaleHistory[_id];
+    }
 }
