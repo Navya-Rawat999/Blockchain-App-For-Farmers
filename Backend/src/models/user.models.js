@@ -24,23 +24,19 @@ const userSchema = new Schema({
     trim: true,
     index: true,
   },
-  avatar: {
+  profilePic: {
     type: String, // cloudinary url
     required: true
   },
-  coverImage: {
-    type: String, // cloudinary url
-  },
-  watchHistory: [
-    {
-      type: Schema.Types.ObjectId,
-      ref: "Video"
-    }
-  ],
   password: {
     type: String,
     required: [true, "password is required"]
   },
+  role: {
+    type: String,
+    enum: ['farmer', 'consumer'],
+    required: [true, "type is required"]
+ },
   refreshToken: {
     type: String
   }
@@ -86,3 +82,23 @@ userSchema.methods.generateRefreshToken = function(){
 }
 
 export const User = mongoose.model("User", userSchema)
+
+export const Farmer = User.discriminator(
+  'farmer',
+  new Schema({
+    KisanID: {
+      type: String, // cloudinary url
+      required: true
+    }
+  })
+)
+
+export const Consumer = User.discriminator(
+  'customer',
+  new Schema({
+    License: {
+      type: String, // cloudinary url
+      required: true
+    }
+  })
+)
