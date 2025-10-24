@@ -1,4 +1,4 @@
-import { User, Farmer, Consumer } from "../models/user.models.js"
+import { User, Farmer, Customer } from "../models/user.models.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { cookie_options } from "../constants.js"
 import { asyncHandler } from '../utils/asyncHandler.js'
@@ -38,7 +38,7 @@ const registerUser = asyncHandler(async(req, res) => {
 
   if(userExisted) throw new ApiError(409, "User with username or email already exists")
 
-  if(role !== 'famer' && role !== 'consumer') throw new ApiError(400, "Role was not correctly filled")
+  if(role !== 'famer' && role !== 'customer') throw new ApiError(400, "Role was not correctly filled")
   
   const profilePic_LocalPath = req.files?.profilePic[0]?.path
  if(!profilePic_LocalPath) throw new ApiError(400, "profilePic file is required")
@@ -67,8 +67,8 @@ const registerUser = asyncHandler(async(req, res) => {
 
     user_id = farmer._id
   }
-  else if (role === 'consumer'){
-    const consumer = Consumer.create({
+  else if (role === 'customer'){
+    const customer = Customer.create({
     fullName,
     profilePic: profilePic?.url,
     License: id_proof?.url,
@@ -78,7 +78,7 @@ const registerUser = asyncHandler(async(req, res) => {
     role,
     })
 
-    user_id = Consumer._id
+    user_id = customer._id
   }
   
 
@@ -108,7 +108,7 @@ const loginUser = asyncHandler(async (req, res) => {
     })  
   }
   else {
-    user = await Consumer.findOne({
+    user = await Customer.findOne({
     $or: [{username}, {email}]
     })  
   }
@@ -127,8 +127,8 @@ const loginUser = asyncHandler(async (req, res) => {
       "-password -refreshToken"
     )
   }
-  else if (role === 'consumer'){
-    loggedInUser = await Consumer.findById(user._id).select(
+  else if (role === 'customer'){
+    loggedInUser = await Customer.findById(user._id).select(
       "-password -refreshToken"
     )
   }
@@ -288,7 +288,7 @@ const updateUserprofilePic = asyncHandler(async(req, res) => {
 
 const updateUserValidIDProof = asyncHandler(async(req, res) => {
   const {role} = req.body
-  if(role !== 'farmer' && role !== 'consumer') throw new ApiError(400, "role is missing")
+  if(role !== 'farmer' && role !== 'customer') throw new ApiError(400, "role is missing")
     
   const id_proof_LocalPath = req.file?.path
   if(!id_proof_LocalPath) throw new ApiError(400, "coverImage file is missing")
@@ -309,7 +309,7 @@ const updateUserValidIDProof = asyncHandler(async(req, res) => {
     ).select("-password -refreshToken")
   }
   else {
-    user = await Consumer.findByIdAndUpdate(
+    user = await Customer.findByIdAndUpdate(
       req.user._id,
       {
         $set: {

@@ -34,9 +34,9 @@ const userSchema = new Schema({
   },
   role: {
     type: String,
-    enum: ['farmer', 'consumer'],
+    enum: ['farmer', 'customer'],
     required: [true, "type is required"]
- },
+  },
   refreshToken: {
     type: String
   }
@@ -93,7 +93,7 @@ export const Farmer = User.discriminator(
   })
 )
 
-export const Consumer = User.discriminator(
+export const Customer = User.discriminator(
   'customer',
   new Schema({
     License: {
