@@ -23,7 +23,8 @@ function Navbar() {
           <a className="btn btn-ghost" href="/scan">Scan</a>
           <a className="btn btn-ghost" href="/farmer">Farmer</a>
           <a className="btn btn-ghost" href="/customer">Customer</a>
-          <a className="btn" href="/login">Login</a>
+          <a className="btn btn-outline btn-sm" href="/login/farmer">Farmer Login</a>
+          <a className="btn btn-outline btn-sm" href="/login/customer">Customer Login</a>
           <ConnectWallet />
         </div>
       </div>

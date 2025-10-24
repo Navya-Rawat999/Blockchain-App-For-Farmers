@@ -38,6 +38,25 @@ export default function Login() {
   )
 }
 
+// Dedicated pages when you want separate routes/buttons
+export function FarmerLogin() {
+  return (
+    <div className="max-w-2xl mx-auto">
+      <h1 className="text-3xl font-bold mb-6">Farmer Login</h1>
+      <LoginForm role="farmer" />
+    </div>
+  )
+}
+
+export function CustomerLogin() {
+  return (
+    <div className="max-w-2xl mx-auto">
+      <h1 className="text-3xl font-bold mb-6">Customer Login</h1>
+      <LoginForm role="customer" />
+    </div>
+  )
+}
+
 function LoginForm({ role }: { role: Role }) {
   const navigate = useNavigate()
   const [username, setUsername] = useState('')

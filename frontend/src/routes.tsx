@@ -5,7 +5,7 @@ import Wallet from './screens/Wallet'
 import Farmer from './screens/Farmer'
 import Customer from './screens/Customer'
 import Scan from './screens/Scan'
-import Login from './screens/Login'
+import Login, { FarmerLogin, CustomerLogin } from './screens/Login'
 
 const routes: RouteObject[] = [
   {
@@ -18,6 +18,8 @@ const routes: RouteObject[] = [
       { path: 'customer', element: <Customer /> },
       { path: 'scan', element: <Scan /> },
       { path: 'login', element: <Login /> },
+      { path: 'login/farmer', element: <FarmerLogin /> },
+      { path: 'login/customer', element: <CustomerLogin /> },
     ],
   },
 ]

@@ -21,7 +21,7 @@ function Hero() {
       </h1>
       <p className="text-base-content/70 max-w-2xl mx-auto">
         Register agricultural produce, verify origin and pricing, and pay farmers directly.
-        Powered by smart contracts and QR codes.
+        Powered by Etheriun smart contracts.
       </p>
       <div className="flex justify-center gap-3">
         <Link to="/wallet" className="btn btn-primary">Connect Wallet</Link>
