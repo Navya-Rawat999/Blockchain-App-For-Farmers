@@ -19,7 +19,11 @@ function Navbar() {
         <div className="flex-1">
           <a className="btn btn-ghost normal-case text-xl" href="/">ProduceChain</a>
         </div>
-        <div className="flex-none">
+        <div className="flex-none flex items-center gap-2">
+          <a className="btn btn-ghost" href="/scan">Scan</a>
+          <a className="btn btn-ghost" href="/farmer">Farmer</a>
+          <a className="btn btn-ghost" href="/customer">Customer</a>
+          <a className="btn" href="/login">Login</a>
           <ConnectWallet />
         </div>
       </div>
