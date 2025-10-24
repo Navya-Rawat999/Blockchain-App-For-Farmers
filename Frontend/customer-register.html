@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer Registration - Kissan Sathi</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/navbar.css" />
+</head>
+<body>
+  <div id="navbar"></div>
+  <main class="main-content">
+    <div class="container">
+      <div style="max-width: 600px; margin: 0 auto; padding: 0 1rem;">
+        <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 1.5rem;">Register as Customer</h1>
+        <div id="alert-container"></div>
+        <form id="customer-register-form" class="card">
+          <div class="form-group">
+            <label class="form-label" for="fullName">Full name</label>
+            <input type="text" id="fullName" name="fullName" class="form-input" placeholder="Your full name" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="email">Email</label>
+            <input type="email" id="email" name="email" class="form-input" placeholder="you@example.com" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="username">Username</label>
+            <input type="text" id="username" name="username" class="form-input" placeholder="your-unique-username" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="password">Password</label>
+            <input type="password" id="password" name="password" class="form-input" placeholder="••••••••" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="profilePic">Profile photo</label>
+            <input type="file" id="profilePic" name="profilePic" class="file-input" accept="image/*" required />
+            <span class="form-help">Upload a profile picture (image only).</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="fssaiLicense">FSSAI licence photo</label>
+            <input type="file" id="fssaiLicense" name="fssaiLicense" class="file-input" accept="image/*,.pdf" required />
+            <span class="form-help">Images or PDF accepted. Used for verification.</span>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%;" id="submit-btn">Create account</button>
+          <p class="text-center mt-2" style="color: var(--text-secondary);">
+            Already have an account? <a href="/customer-login.html" style="color: var(--primary-color);">Login</a>
+          </p>
+        </form>
+      </div>
+    </div>
+  </main>
+  <footer class="footer">
+    <p>&copy; 2025 Kissan Sathi. Built for transparent agriculture.</p>
+  </footer>
+  <script src="js/utils.js"></script>
+  <script src="js/navbar.js"></script>
+  <script src="js/customer-register.js"></script>
+</body>
+</html>

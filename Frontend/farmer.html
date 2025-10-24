@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Farmer Dashboard - Kissan Sathi</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/navbar.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <div id="navbar"></div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container" style="padding: 0 1rem;">
+      <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 1.5rem;">Farmer Dashboard</h1>
+
+      <div id="alert-container"></div>
+
+      <!-- Register New Produce Section -->
+      <div class="card">
+        <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">Register New Produce</h2>
+        
+        <form id="register-produce-form">
+          <div class="form-group">
+            <label class="form-label" for="produce-name">Produce Name</label>
+            <input 
+              type="text" 
+              id="produce-name" 
+              class="form-input" 
+              placeholder="e.g., Organic Tomatoes"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="origin-farm">Origin Farm</label>
+            <input 
+              type="text" 
+              id="origin-farm" 
+              class="form-input" 
+              placeholder="e.g., Green Valley Farm"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="price">Price (INR)</label>
+            <input 
+              type="number" 
+              id="price" 
+              class="form-input" 
+              placeholder="100"
+              min="1"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="qr-code">QR Code Data</label>
+            <input 
+              type="text" 
+              id="qr-code" 
+              class="form-input" 
+              placeholder="Unique identifier or URL"
+              required
+            >
+            <span class="form-help">This will be embedded in the QR code for customer scanning.</span>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="register-btn">
+            Register Produce
+          </button>
+        </form>
+      </div>
+
+      <!-- My Produce List -->
+      <div class="card">
+        <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">My Registered Produce</h2>
+        <div id="produce-list">
+          <p style="color: var(--text-secondary);">Loading your produce...</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; 2025 Kissan Sathi. Built for transparent agriculture.</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/navbar.js"></script>
+  <script src="js/farmer.js"></script>
+</body>
+</html>

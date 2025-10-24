@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Dashboard - Kissan Sathi</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/navbar.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <div id="navbar"></div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container" style="padding: 0 1rem;">
+      <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 1.5rem;">Customer Dashboard</h1>
+
+      <div id="alert-container"></div>
+
+      <!-- Scan QR Code Section -->
+      <div class="card">
+        <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">Scan QR Code</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+          Scan a produce QR code to view its complete history and verify authenticity.
+        </p>
+        <a href="/scan.html" class="btn btn-primary">Open Scanner</a>
+      </div>
+
+      <!-- Browse Available Produce -->
+      <div class="card">
+        <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">Browse Available Produce</h2>
+        
+        <div class="form-group">
+          <label class="form-label" for="search-produce">Search by Produce ID</label>
+          <div style="display: flex; gap: 0.5rem;">
+            <input 
+              type="number" 
+              id="search-produce" 
+              class="form-input" 
+              placeholder="Enter produce ID"
+              min="1"
+            >
+            <button id="search-btn" class="btn btn-primary" style="white-space: nowrap;">
+              View Details
+            </button>
+          </div>
+        </div>
+
+        <div id="produce-details" style="margin-top: 1.5rem;">
+          <!-- Produce details will be displayed here -->
+        </div>
+      </div>
+
+      <!-- Purchase History -->
+      <div class="card">
+        <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">My Purchase History</h2>
+        <div id="purchase-history">
+          <p style="color: var(--text-secondary);">Your purchase history will appear here.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; 2025 Kissan Sathi. Built for transparent agriculture.</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/navbar.js"></script>
+  <script src="js/customer.js"></script>
+</body>
+</html>

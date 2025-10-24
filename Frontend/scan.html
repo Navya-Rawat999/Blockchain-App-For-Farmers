@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scan QR Code - ProduceChain</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/navbar.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <div id="navbar"></div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container">
+      <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 1.5rem; padding: 0 1rem;">Scan QR Code</h1>
+
+      <div id="alert-container"></div>
+
+      <div class="card" style="max-width: 600px; margin: 0 auto;">
+        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+          Scan the QR code on produce packaging to verify its authenticity and view complete history.
+        </p>
+
+        <!-- QR Scanner Container -->
+        <div id="qr-reader" style="margin-bottom: 1.5rem; width: 100%; max-width: 100%;"></div>
+
+        <!-- Manual Entry Option -->
+        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+          <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+            Or enter produce ID manually:
+          </p>
+          <div style="display: flex; gap: 0.5rem;">
+            <input 
+              type="text" 
+              id="manual-produce-id" 
+              class="form-input" 
+              placeholder="Enter produce ID or QR data"
+            >
+            <button id="manual-submit-btn" class="btn btn-primary">
+              View
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scan Results -->
+      <div id="scan-results" class="mt-3" style="max-width: 600px; margin: 1.5rem auto 0;">
+        <!-- Results will be displayed here -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; 2025 Kissan Sathi. Built for transparent agriculture.</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/navbar.js"></script>
+  <script src="js/scan.js"></script>
+</body>
+</html>

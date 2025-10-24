@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Login - Kissan Sathi</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/navbar.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <div id="navbar"></div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container">
+      <div style="max-width: 500px; margin: 0 auto; padding: 0 1rem;">
+        <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 1.5rem;">Customer Login</h1>
+
+        <div id="alert-container"></div>
+
+  <form id="customer-login-form" class="card">
+          <div class="form-group">
+            <label class="form-label" for="username">Username</label>
+            <input 
+              type="text" 
+              id="username" 
+              name="username" 
+              class="form-input" 
+              placeholder="your-unique-username"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="password">Password</label>
+            <input 
+              type="password" 
+              id="password" 
+              name="password" 
+              class="form-input" 
+              placeholder="••••••••"
+              required
+            >
+          </div>
+
+          <!-- File upload moved to registration -->
+
+          <button type="submit" class="btn btn-primary" style="width: 100%;" id="submit-btn">
+            Login
+          </button>
+
+          <p class="text-center mt-2" style="color: var(--text-secondary);">
+            Don't have an account? <a href="/customer-register.html" style="color: var(--primary-color);">Register here</a>
+          </p>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; 2025 Kissan Sathi. Built for transparent agriculture.</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/utils.js"></script>
+  <script src="js/navbar.js"></script>
+  <script src="js/customer-login.js"></script>
+</body>
+</html>
