@@ -1,6 +1,6 @@
-# ProduceChain - Plain HTML/CSS/JS Frontend
+# ProduceChain - Express.js Frontend
 
-A simple, no-framework frontend for the ProduceChain blockchain application.
+A Node.js Express frontend for the ProduceChain blockchain application with ES modules and axios.
 
 ## 📁 File Structure
 

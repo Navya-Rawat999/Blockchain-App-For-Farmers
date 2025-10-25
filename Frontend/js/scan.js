@@ -1,3 +1,5 @@
+import utils from '../js/utils.js';
+
 // QR Code Scanner
 let html5QrcodeScanner = null;
 let contract = null;
@@ -14,7 +16,7 @@ const CONTRACT_ADDRESS = '0x...'; // Replace with your deployed contract address
 async function initWeb3() {
   if (typeof window.ethereum !== 'undefined') {
     try {
-      provider = new ethers.providers.Web3Provider(window.ethereum);
+      provider = new ethers.BrowserProvider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
       contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
       return true;
@@ -143,7 +145,7 @@ async function handleScanResult(qrData) {
         </div>
 
         <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-          <a href="/customer.html" class="btn btn-primary" style="width: 100%;">
+          <a href="customer.html" class="btn btn-primary" style="width: 100%;">
             View Full Details & Purchase
           </a>
         </div>

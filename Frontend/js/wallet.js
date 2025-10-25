@@ -1,3 +1,5 @@
+import utils from '../js/utils.js';
+
 // Wallet Connection Handler
 let provider = null;
 let signer = null;
@@ -44,11 +46,11 @@ async function checkWalletConnection() {
   }
 
   try {
-    provider = new ethers.providers.Web3Provider(window.ethereum);
+    provider = new ethers.BrowserProvider(window.ethereum);
     const accounts = await provider.listAccounts();
     
     if (accounts.length > 0) {
-      userAddress = accounts[0];
+      userAddress = accounts[0].address;
       await updateWalletUI(true);
     }
   } catch (error) {
@@ -65,10 +67,10 @@ async function connectWallet() {
 
   try {
     // Request account access
-    provider = new ethers.providers.Web3Provider(window.ethereum);
+    provider = new ethers.BrowserProvider(window.ethereum);
     await provider.send("eth_requestAccounts", []);
     
-    signer = provider.getSigner();
+    signer = await provider.getSigner();
     userAddress = await signer.getAddress();
     
     utils.showAlert('Wallet connected successfully!', 'success');
@@ -104,7 +106,7 @@ async function updateWalletUI(connected) {
     // Get and display network
     try {
       const network = await provider.getNetwork();
-      const networkName = getNetworkName(network.chainId);
+      const networkName = getNetworkName(Number(network.chainId));
       document.getElementById('wallet-network').textContent = networkName;
     } catch (error) {
       document.getElementById('wallet-network').textContent = 'Unknown';
@@ -113,7 +115,7 @@ async function updateWalletUI(connected) {
     // Get and display balance
     try {
       const balance = await provider.getBalance(userAddress);
-      const balanceInEth = ethers.utils.formatEther(balance);
+      const balanceInEth = ethers.formatEther(balance);
       document.getElementById('wallet-balance').textContent = parseFloat(balanceInEth).toFixed(4);
     } catch (error) {
       document.getElementById('wallet-balance').textContent = '0.0000';

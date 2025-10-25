@@ -1,3 +1,5 @@
+import utils from '../js/utils.js';
+
 // Farmer Dashboard - Web3 interactions
 let contract = null;
 let provider = null;
@@ -17,9 +19,9 @@ const CONTRACT_ADDRESS = '0x...'; // Replace with your deployed contract address
 async function initWeb3() {
   if (typeof window.ethereum !== 'undefined') {
     try {
-      provider = new ethers.providers.Web3Provider(window.ethereum);
+      provider = new ethers.BrowserProvider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
-      signer = provider.getSigner();
+      signer = await provider.getSigner();
       contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
       return true;
     } catch (error) {
@@ -36,14 +38,14 @@ async function initWeb3() {
 document.addEventListener('DOMContentLoaded', async () => {
   // Check authentication
   if (!utils.isAuthenticated()) {
-    utils.redirect('/farmer-login.html');
+    utils.redirect('login.html');
     return;
   }
 
   const user = utils.getUser();
   if (user && user.role !== 'farmer') {
     utils.showAlert('Access denied. Farmer account required.', 'error');
-    utils.redirect('/index.html');
+    utils.redirect('index.html');
     return;
   }
 

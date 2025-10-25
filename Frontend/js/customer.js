@@ -1,3 +1,5 @@
+import utils from '../js/utils.js';
+
 // Customer Dashboard - View and purchase produce
 let contract = null;
 let provider = null;
@@ -16,9 +18,9 @@ const CONTRACT_ADDRESS = '0x...'; // Replace with your deployed contract address
 async function initWeb3() {
   if (typeof window.ethereum !== 'undefined') {
     try {
-      provider = new ethers.providers.Web3Provider(window.ethereum);
+      provider = new ethers.BrowserProvider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
-      signer = provider.getSigner();
+      signer = await provider.getSigner();
       contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
       return true;
     } catch (error) {
@@ -34,14 +36,14 @@ async function initWeb3() {
 document.addEventListener('DOMContentLoaded', async () => {
   // Check authentication
   if (!utils.isAuthenticated()) {
-    utils.redirect('/customer-login.html');
+    utils.redirect('login.html');
     return;
   }
 
   const user = utils.getUser();
   if (user && user.role !== 'customer') {
     utils.showAlert('Access denied. Customer account required.', 'error');
-    utils.redirect('/index.html');
+    utils.redirect('index.html');
     return;
   }
 
@@ -154,7 +156,7 @@ async function viewProduceDetails(produceId) {
 async function buyProduce(produceId, price) {
   try {
     const tx = await contract.buyProduce(produceId, {
-      value: ethers.BigNumber.from(price)
+      value: ethers.parseEther(price.toString())
     });
     
     utils.showAlert('Purchase transaction submitted. Waiting for confirmation...', 'warning');

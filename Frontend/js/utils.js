@@ -1,37 +1,47 @@
 // API Configuration
 const API_BASE = 'http://localhost:8000';
 
+// Configure axios defaults
+axios.defaults.baseURL = API_BASE;
+axios.defaults.withCredentials = true;
+
 // Utility Functions
 const utils = {
-  // API call helper
+  // API call helper using axios
   async apiCall(endpoint, options = {}) {
-    const defaultOptions = {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-    };
+    try {
+      const { method = 'GET', body, headers = {} } = options;
+      
+      const config = {
+        method,
+        url: endpoint,
+        headers,
+        ...options
+      };
 
-    // If body is FormData, remove Content-Type header
-    if (options.body instanceof FormData) {
-      delete defaultOptions.headers['Content-Type'];
+      // Handle different body types
+      if (body instanceof FormData) {
+        config.data = body;
+        // Let axios set the Content-Type for FormData
+      } else if (body) {
+        config.data = typeof body === 'string' ? JSON.parse(body) : body;
+        config.headers['Content-Type'] = 'application/json';
+      }
+
+      const response = await axios(config);
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        // Server responded with error status
+        throw new Error(error.response.data.message || `HTTP error! status: ${error.response.status}`);
+      } else if (error.request) {
+        // Request was made but no response received
+        throw new Error('Network error: Unable to reach server');
+      } else {
+        // Something else happened
+        throw new Error(error.message || 'An unexpected error occurred');
+      }
     }
-
-    const response = await fetch(`${API_BASE}${endpoint}`, {
-      ...defaultOptions,
-      ...options,
-      headers: {
-        ...defaultOptions.headers,
-        ...options.headers,
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || `HTTP error! status: ${response.status}`);
-    }
-
-    return response.json();
   },
 
   // Auth helpers
@@ -67,7 +77,9 @@ const utils = {
 
   // Navigation
   redirect(path) {
-    window.location.href = path;
+    // Remove leading slash for relative paths
+    const relativePath = path.startsWith('/') ? path.substring(1) : path;
+    window.location.href = relativePath;
   },
 
   // Show/hide elements
@@ -105,12 +117,10 @@ const utils = {
     } finally {
       this.clearAuthToken();
       this.clearUser();
-      this.redirect('/index.html');
+      this.redirect('index.html');
     }
   },
 };
 
-// Export for use in other files
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = utils;
-}
+// Export utils as default
+export default utils;
