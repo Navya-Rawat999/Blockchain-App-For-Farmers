@@ -1,11 +1,18 @@
 import { ethers } from 'ethers';
 
 class ProduceMarketplace {
-    constructor(contractAddress = null, contractABI = null) {
+    constructor(contractAddress = null,) {
         
         this.contractAddress = '' // in evn file
-        this.contractABI = contractABI;
-        
+        this.contractABI = [
+            "function registerProduce(string _name, string _originFarm, uint256 _initialPriceinINR, string _QRCodeData) returns(uint256)",
+            "function updateProducePrice(uint256 _id, uint256 _newPriceInINR)",
+            "function buyProduce(uint256 _id) payable",
+            "function getProduceDetails(uint256 _id) view returns (uint256, string, address, address, string, uint256, string, string)",
+            "function getSaleHistory(uint256 _id) view returns (tuple(uint256, address, address, uint256, uint256)[])",
+            "event ProduceRegistered(uint256 indexed id, string name, address indexed farmer, string originFarm)",
+            "event ProduceSold(uint256 indexed id, address indexed buyer, address indexed seller, uint256 pricePaid)"
+        ];
         this.provider = null;
         this.signer = null;
         this.contract = null;
