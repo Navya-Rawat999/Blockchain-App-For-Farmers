@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marketplace - Kissan Sathi</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/navbar.css">
+  <style>
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .product-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .product-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px rgba(79, 70, 229, 0.2);
+    }
+
+    .product-status {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-available {
+      background-color: rgba(16, 185, 129, 0.2);
+      color: var(--success);
+    }
+
+    .status-sold {
+      background-color: rgba(239, 68, 68, 0.2);
+      color: var(--error);
+    }
+
+    .cart-badge {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--primary-color);
+      color: white;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+      transition: transform 0.2s;
+      z-index: 100;
+    }
+
+    .cart-badge:hover {
+      transform: scale(1.1);
+    }
+
+    .cart-count {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: var(--error);
+      color: white;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--bg-card);
+      border-radius: 0.5rem;
+      max-width: 600px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 2rem;
+    }
+
+    .cart-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      background: var(--bg-dark);
+      border-radius: 0.375rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .filters {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    @media (max-width: 640px) {
+      .product-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .cart-badge {
+        bottom: 1rem;
+        right: 1rem;
+        width: 50px;
+        height: 50px;
+      }
+
+      .filters {
+        flex-direction: column;
+      }
+
+      .search-box {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <div id="navbar"></div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container">
+      <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 1.5rem;">🛒 Marketplace</h1>
+
+      <div id="alert-container"></div>
+
+      <!-- Filters -->
+      <div class="card">
+        <div class="filters">
+          <div class="search-box">
+            <input 
+              type="text" 
+              id="search-input" 
+              class="form-input" 
+              placeholder="Search by name or ID..."
+            >
+          </div>
+          <select id="status-filter" class="form-input" style="max-width: 200px;">
+            <option value="all">All Status</option>
+            <option value="available">Available Only</option>
+            <option value="sold">Sold</option>
+          </select>
+          <button id="refresh-btn" class="btn btn-outline">
+            🔄 Refresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Products Grid -->
+      <div id="products-container">
+        <div class="product-grid" id="products-grid">
+          <p style="color: var(--text-secondary); grid-column: 1/-1; text-align: center;">
+            Loading products...
+          </p>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem;" id="pagination">
+        <!-- Pagination will be added dynamically -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Cart Modal -->
+  <div id="cart-modal" class="modal">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2 style="font-size: 1.5rem; font-weight: 600;">🛒 Your Cart</h2>
+        <button onclick="closeCart()" style="background: none; border: none; color: var(--text-primary); font-size: 1.5rem; cursor: pointer;">
+          ×
+        </button>
+      </div>
+
+      <div id="cart-items">
+        <p style="color: var(--text-secondary); text-align: center;">Your cart is empty</p>
+      </div>
+
+      <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+        <div style="display: flex; justify-content: space-between; font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">
+          <span>Total:</span>
+          <span id="cart-total">0 ETH</span>
+        </div>
+        <button id="checkout-btn" class="btn btn-primary" style="width: 100%;" onclick="checkout()">
+          Checkout
+        </button>
+        <button onclick="clearCart()" class="btn btn-outline" style="width: 100%; margin-top: 0.5rem;">
+          Clear Cart
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cart Badge -->
+  <div id="cart-badge" class="cart-badge" onclick="openCart()">
+    🛒
+    <span id="cart-count" class="cart-count" style="display: none;">0</span>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; 2025 Kissan Sathi. Built for transparent agriculture.</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.5/dist/axios.min.js"></script>
+  <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js" type="application/javascript"></script>
+  <script type="module" src="../js/utils.js"></script>
+  <script src="../js/navbar.js"></script>
+  <script src="../js/marketplace.js"></script>
+</body>
+</html>

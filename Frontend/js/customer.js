@@ -5,11 +5,11 @@ let contract = null;
 let provider = null;
 let signer = null;
 
-// Contract ABI - simplified for demo
+// Contract ABI - Updated to match new contract
 const CONTRACT_ABI = [
-  "function getProduceDetails(uint256 _id) public view returns (uint256 id, string memory name, address originalFarmer, address currentSeller, string memory currentStatus, uint256 priceInWei, string memory originFarm, string memory qrCode)",
+  "function getProduceDetails(uint256 _id) public view returns (uint256 id, string memory name, address originalFarmer, address currentSeller, string memory currentStatus, uint256 priceInWei, string memory originFarm, string memory qrCode, uint256 registrationTimestamp)",
   "function buyProduce(uint256 _id) public payable",
-  "function getSaleHistory(uint256 _id) public view returns (tuple(uint256 ProduceId, address buyer, address seller, uint256 pricePaid, uint256 SaleTimeStamp)[] memory)"
+  "function getSaleHistory(uint256 _id) public view returns (tuple(uint256 ProduceId, address buyer, address seller, uint256 pricePaidInWei, uint256 SaleTimeStamp)[] memory)"
 ];
 
 const CONTRACT_ADDRESS = '0x...'; // Replace with your deployed contract address
@@ -86,51 +86,57 @@ async function viewProduceDetails(produceId) {
     // Fetch produce details from blockchain
     const details = await contract.getProduceDetails(produceId);
     
+    const priceInEth = ethers.formatEther(details[5]);
+    const date = new Date(Number(details[8]) * 1000);
+    
     // Display produce details
     detailsContainer.innerHTML = `
       <div class="card" style="background-color: var(--bg-dark); border: 2px solid var(--border-color);">
-        <h3 style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--primary-color);">${details.name}</h3>
+        <h3 style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--primary-color);">${details[1]}</h3>
         
         <div style="display: grid; gap: 0.75rem;">
           <div>
-            <strong>Produce ID:</strong> ${details.id.toString()}
+            <strong>Produce ID:</strong> ${details[0].toString()}
           </div>
           <div>
-            <strong>Origin Farm:</strong> ${details.originFarm}
+            <strong>Origin Farm:</strong> ${details[6]}
           </div>
           <div>
             <strong>Status:</strong> 
             <span style="padding: 0.25rem 0.5rem; background-color: var(--success); border-radius: 0.25rem; font-size: 0.875rem;">
-              ${details.currentStatus}
+              ${details[4]}
             </span>
           </div>
           <div>
-            <strong>Price:</strong> ${details.priceInWei.toString()} INR
+            <strong>Price:</strong> ${priceInEth} ETH
           </div>
           <div>
             <strong>Original Farmer:</strong> 
             <code style="font-size: 0.75rem; background-color: rgba(0,0,0,0.3); padding: 0.25rem 0.5rem; border-radius: 0.25rem;">
-              ${details.originalFarmer}
+              ${details[2]}
             </code>
           </div>
           <div>
             <strong>Current Seller:</strong> 
             <code style="font-size: 0.75rem; background-color: rgba(0,0,0,0.3); padding: 0.25rem 0.5rem; border-radius: 0.25rem;">
-              ${details.currentSeller}
+              ${details[3]}
             </code>
           </div>
           <div>
-            <strong>QR Code Data:</strong> ${details.qrCode}
+            <strong>QR Code Data:</strong> ${details[7]}
+          </div>
+          <div>
+            <strong>Registered:</strong> ${date.toLocaleString()}
           </div>
         </div>
 
-        ${details.currentStatus !== 'Sold' ? `
+        ${details[4] !== 'Sold' ? `
           <button 
             class="btn btn-primary mt-3" 
             style="width: 100%;"
-            onclick="buyProduce(${produceId}, ${details.priceInWei})"
+            onclick="buyProduce('${produceId}', '${details[5].toString()}')"
           >
-            Purchase for ${details.priceInWei.toString()} INR
+            Purchase for ${priceInEth} ETH
           </button>
         ` : `
           <div class="alert alert-warning mt-3">
@@ -153,10 +159,10 @@ async function viewProduceDetails(produceId) {
 }
 
 // Purchase produce
-async function buyProduce(produceId, price) {
+async function buyProduce(produceId, priceInWei) {
   try {
     const tx = await contract.buyProduce(produceId, {
-      value: ethers.parseEther(price.toString())
+      value: priceInWei
     });
     
     utils.showAlert('Purchase transaction submitted. Waiting for confirmation...', 'warning');
@@ -187,14 +193,18 @@ async function loadSaleHistory(produceId) {
       return;
     }
 
-    const historyHTML = history.map(sale => `
-      <div style="padding: 0.75rem; background-color: rgba(0,0,0,0.2); border-radius: 0.375rem; margin-bottom: 0.5rem;">
-        <div><strong>Buyer:</strong> <code style="font-size: 0.75rem;">${sale.buyer}</code></div>
-        <div><strong>Seller:</strong> <code style="font-size: 0.75rem;">${sale.seller}</code></div>
-        <div><strong>Price Paid:</strong> ${sale.pricePaid.toString()} INR</div>
-        <div><strong>Date:</strong> ${new Date(sale.SaleTimeStamp.toNumber() * 1000).toLocaleString()}</div>
-      </div>
-    `).join('');
+    const historyHTML = history.map(sale => {
+      const priceInEth = ethers.formatEther(sale[3]);
+      const date = new Date(Number(sale[4]) * 1000);
+      return `
+        <div style="padding: 0.75rem; background-color: rgba(0,0,0,0.2); border-radius: 0.375rem; margin-bottom: 0.5rem;">
+          <div><strong>Buyer:</strong> <code style="font-size: 0.75rem;">${sale[1]}</code></div>
+          <div><strong>Seller:</strong> <code style="font-size: 0.75rem;">${sale[2]}</code></div>
+          <div><strong>Price Paid:</strong> ${priceInEth} ETH</div>
+          <div><strong>Date:</strong> ${date.toLocaleString()}</div>
+        </div>
+      `;
+    }).join('');
 
     document.getElementById('produce-details').innerHTML += `
       <div class="mt-3">

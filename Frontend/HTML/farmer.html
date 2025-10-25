@@ -46,15 +46,17 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="price">Price (INR)</label>
+            <label class="form-label" for="price">Price (ETH)</label>
             <input 
               type="number" 
               id="price" 
               class="form-input" 
-              placeholder="100"
-              min="1"
+              placeholder="0.001"
+              step="0.0001"
+              min="0.0001"
               required
             >
+            <span class="form-help">Enter the price in ETH (Ethereum). Example: 0.001 ETH</span>
           </div>
 
           <div class="form-group">

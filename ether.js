@@ -5,13 +5,17 @@ class ProduceMarketplace {
         
         this.contractAddress = '' // in evn file
         this.contractABI = [
-            "function registerProduce(string _name, string _originFarm, uint256 _initialPriceinINR, string _QRCodeData) returns(uint256)",
-            "function updateProducePrice(uint256 _id, uint256 _newPriceInINR)",
+            "function registerProduce(string _name, string _originFarm, uint256 _initialPriceInWei, string _QRCodeData) returns(uint256)",
+            "function updateProducePrice(uint256 _id, uint256 _newPriceInWei)",
+            "function updateProduceStatus(uint256 _id, string _newStatus)",
             "function buyProduce(uint256 _id) payable",
-            "function getProduceDetails(uint256 _id) view returns (uint256, string, address, address, string, uint256, string, string)",
+            "function getProduceDetails(uint256 _id) view returns (uint256, string, address, address, string, uint256, string, string, uint256)",
             "function getSaleHistory(uint256 _id) view returns (tuple(uint256, address, address, uint256, uint256)[])",
+            "function getProduceIdsByName(string _name) view returns (uint256[])",
             "event ProduceRegistered(uint256 indexed id, string name, address indexed farmer, string originFarm)",
-            "event ProduceSold(uint256 indexed id, address indexed buyer, address indexed seller, uint256 pricePaid)"
+            "event PriceUpdated(uint256 indexed id, uint256 newPriceInWei, address indexed updater)",
+            "event StatusUpdated(uint256 indexed id, string NewStatus, address indexed updater)",
+            "event ProduceSold(uint256 indexed id, address indexed buyer, address indexed seller, uint256 pricePaidInWei)"
         ];
         this.provider = null;
         this.signer = null;
@@ -130,21 +134,21 @@ class ProduceMarketplace {
     }
 }
 
-    async updateProducePrice(produceId, newPriceInRupees) {
+    async updateProducePrice(produceId, newPriceInWei) {
         //checking if wallet is connected 
         if (!this.signer) {
             throw new Error("Please connect your wallet first");
         }
         //recording the transaction(changing the price )
         const txId = this.recordTransaction('price_update', produceId, {
-            newPrice: newPriceInRupees
+            newPrice: newPriceInWei
         });
 
         try {
             // calling the contract to update the price 
             const transaction = await this.contract.updateProducePrice(
                 produceId,
-                newPriceInRupees
+                newPriceInWei
             );
             //updating the transaction status
             this.updateTransactionStatus(txId, 'processing', transaction.hash);
@@ -188,20 +192,17 @@ class ProduceMarketplace {
         }
     }
 
-    async buyProduce(produceId, priceInRupees) {
+    async buyProduce(produceId, priceInWei) {
         if (!this.signer) {
             throw new Error("Please connect your wallet first");
         }
         // creating a local record (done this earlier)
         const txId = this.recordTransaction('sale', produceId, {
-            priceInRupees: priceInRupees,
+            priceInWei: priceInWei,
             buyer: this.userAddress
         });
 
         try {
-            // Convert rupees to wei (wei is smallest unit of eth ... payments are made in wei)
-            const priceInWei = ethers.parseEther(priceInRupees.toString());
-
             //calling smart contract's function...user will see a metamask pop up here
             const transaction = await this.contract.buyProduce(produceId, {
                 value: priceInWei
@@ -234,9 +235,10 @@ class ProduceMarketplace {
                 originalFarmer: details[2],
                 currentSeller: details[3],
                 currentStatus: details[4],
-                priceInRupees: ethers.formatEther(details[5]),
+                priceInWei: details[5],
                 originFarm: details[6],
-                qrCode: details[7]
+                qrCode: details[7],
+                registrationTimestamp: details[8]
             };
         } catch (error) {
             console.error("Error fetching produce details:", error);
@@ -252,8 +254,8 @@ class ProduceMarketplace {
                 produceId: record.ProduceId.toString(),
                 buyer: record.buyer,
                 seller: record.seller,
-                pricePaid: ethers.formatEther(record.pricePaid),
-                saleTimestamp: new Date(record.SaleTimeStamp * 1000).toLocaleString()
+                pricePaidInWei: record.pricePaidInWei,
+                saleTimestamp: new Date(Number(record.SaleTimeStamp) * 1000).toLocaleString()
             }));
         } catch (error) {
             console.error("Error fetching sale history:", error);
