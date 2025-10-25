@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   const user = utils.getUser();
-  if (user && user.role !== 'customer' && user.role !== 'consumer') {
+  if (user && user.role !== 'customer') {
     utils.showAlert('Access denied. Customer account required.', 'error');
     utils.redirect('/index.html');
     return;

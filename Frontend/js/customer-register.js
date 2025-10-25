@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fd.append('email', email);
       fd.append('username', username);
       fd.append('password', password);
-      fd.append('role', 'consumer'); // backend expects 'consumer'
+      fd.append('role', 'customer'); 
       fd.append('profilePic', profilePic);
       fd.append('valid_id_proof', fssaiLicense);
 

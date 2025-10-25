@@ -14,13 +14,12 @@ document.addEventListener('DOMContentLoaded', () => {
     submitBtn.innerHTML = '<span class="spinner"></span> Logging in...';
 
     try {
-      // Login with username and password only (backend role is 'consumer')
       const loginData = await utils.apiCall('/api/v1/users/login', {
         method: 'POST',
         body: JSON.stringify({
           username,
           password,
-          role: 'consumer',
+          role: 'customer',
         }),
       });
 
