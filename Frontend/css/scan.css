@@ -1,0 +1,146 @@
+/* Scan Page Styles */
+
+.scan-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  padding: 0 1rem;
+  color: #fff;
+}
+
+.scan-card {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.scan-description {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+.qr-reader-container {
+  margin-bottom: 1.5rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+.manual-entry-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.manual-entry-description {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.manual-entry-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.scan-results-container {
+  max-width: 600px;
+  margin: 1.5rem auto 0;
+}
+
+/* Results Card */
+.verified-card {
+  background-color: var(--bg-card);
+  border: 2px solid var(--primary-color);
+}
+
+.verified-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.verified-icon {
+  font-size: 1.5rem;
+}
+
+.verified-title {
+  font-size: 1.25rem;
+  color: #10b981;
+  margin: 0;
+}
+
+.produce-details {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.produce-details strong {
+  color: var(--text-primary);
+}
+
+.status-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  display: inline-block;
+}
+
+.status-badge.available {
+  background-color: #10b981;
+  color: white;
+}
+
+.status-badge.sold {
+  background-color: #f59e0b;
+  color: white;
+}
+
+.address-code {
+  font-size: 0.75rem;
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  display: block;
+  margin-top: 0.25rem;
+  word-break: break-all;
+}
+
+.results-actions {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.full-width-btn {
+  width: 100%;
+}
+
+/* Loading state */
+.loading-text {
+  color: var(--text-secondary);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .scan-title {
+    font-size: 1.5rem;
+    padding: 0 0.5rem;
+  }
+
+  .manual-entry-form {
+    flex-direction: column;
+  }
+
+  .manual-entry-form .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .scan-title {
+    font-size: 1.25rem;
+  }
+
+  .verified-title {
+    font-size: 1.125rem;
+  }
+}

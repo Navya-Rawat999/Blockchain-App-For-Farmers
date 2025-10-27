@@ -88,7 +88,7 @@ function onScanError(error) {
 // Handle scan result and display produce details
 async function handleScanResult(qrData) {
   const resultsContainer = document.getElementById('scan-results');
-  resultsContainer.innerHTML = '<p style="color: var(--text-secondary);">Loading produce details...</p>';
+  resultsContainer.innerHTML = '<p class="loading-text">Loading produce details...</p>';
 
   try {
     // Initialize Web3 if needed
@@ -111,13 +111,13 @@ async function handleScanResult(qrData) {
     
     // Display produce details
     resultsContainer.innerHTML = `
-      <div class="card" style="background-color: var(--bg-card); border: 2px solid var(--primary-color);">
-        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
-          <span style="font-size: 1.5rem;">✓</span>
-          <h3 style="font-size: 1.25rem; color: var(--success); margin: 0;">Verified Produce</h3>
+      <div class="card verified-card">
+        <div class="verified-header">
+          <span class="verified-icon">✓</span>
+          <h3 class="verified-title">Verified Produce</h3>
         </div>
         
-        <div style="display: grid; gap: 0.75rem;">
+        <div class="produce-details">
           <div>
             <strong>Name:</strong> ${details.name}
           </div>
@@ -129,42 +129,52 @@ async function handleScanResult(qrData) {
           </div>
           <div>
             <strong>Status:</strong> 
-            <span style="padding: 0.25rem 0.5rem; background-color: ${details.currentStatus === 'Sold' ? 'var(--warning)' : 'var(--success)'}; border-radius: 0.25rem; font-size: 0.875rem;">
+            <span class="status-badge ${details.currentStatus === 'Sold' ? 'sold' : 'available'}">
               ${details.currentStatus}
             </span>
           </div>
           <div>
-            <strong>Price:</strong> ${details.priceInWei.toString()} INR
+            <strong>Price:</strong> ${ethers.formatEther(details.priceInWei)} ETH
           </div>
           <div>
             <strong>Original Farmer:</strong> 
-            <code style="font-size: 0.75rem; background-color: rgba(0,0,0,0.3); padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: block; margin-top: 0.25rem;">
+            <code class="address-code">
               ${details.originalFarmer}
             </code>
           </div>
         </div>
 
-        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-          <a href="customer.html" class="btn btn-primary" style="width: 100%;">
+        <div class="results-actions">
+          <a href="customer.html" class="btn btn-primary full-width-btn">
             View Full Details & Purchase
           </a>
         </div>
       </div>
 
-      <button class="btn btn-outline mt-2" style="width: 100%;" onclick="location.reload()">
+      <button class="btn btn-outline mt-2 full-width-btn" id="scan-again-btn">
         Scan Another QR Code
       </button>
     `;
+
+    // Add event listener for scan again button
+    document.getElementById('scan-again-btn').addEventListener('click', () => {
+      location.reload();
+    });
   } catch (error) {
     console.error('Error fetching produce details:', error);
     resultsContainer.innerHTML = `
       <div class="alert alert-error">
         Failed to verify produce. ${error.message || 'Please try again or check your connection.'}
       </div>
-      <button class="btn btn-outline mt-2" style="width: 100%;" onclick="location.reload()">
+      <button class="btn btn-outline mt-2 full-width-btn" id="try-again-btn">
         Try Again
       </button>
     `;
+    
+    // Add event listener for try again button
+    document.getElementById('try-again-btn').addEventListener('click', () => {
+      location.reload();
+    });
   }
 }
 

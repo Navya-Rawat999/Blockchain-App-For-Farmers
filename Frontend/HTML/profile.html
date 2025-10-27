@@ -6,201 +6,45 @@
   <title>Profile - Kissan Sathi</title>
   <link rel="stylesheet" href="../css/main.css">
   <link rel="stylesheet" href="../css/navbar.css">
-  <style>
-    .profile-header {
-      background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-      border-radius: 0.5rem;
-      padding: 2rem;
-      margin-bottom: 2rem;
-      text-align: center;
-    }
-
-    .profile-avatar {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      background: var(--bg-dark);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 3rem;
-      margin: 0 auto 1rem;
-      border: 4px solid rgba(255, 255, 255, 0.3);
-    }
-
-    .stat-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 0.5rem;
-      padding: 1.5rem;
-      text-align: center;
-    }
-
-    .stat-value {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--primary-color);
-      margin-bottom: 0.5rem;
-    }
-
-    .stat-label {
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-
-    .info-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 1rem 0;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .info-row:last-child {
-      border-bottom: none;
-    }
-
-    .info-label {
-      font-weight: 600;
-      color: var(--text-secondary);
-    }
-
-    .info-value {
-      color: var(--text-primary);
-      text-align: right;
-    }
-
-    .transaction-item {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 0.5rem;
-      padding: 1rem;
-      margin-bottom: 0.75rem;
-      transition: transform 0.2s;
-    }
-
-    .transaction-item:hover {
-      transform: translateX(4px);
-      border-color: var(--primary-color);
-    }
-
-    .tx-type {
-      display: inline-block;
-      padding: 0.25rem 0.5rem;
-      border-radius: 0.25rem;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-
-    .tx-sale {
-      background: rgba(16, 185, 129, 0.2);
-      color: var(--success);
-    }
-
-    .tx-registration {
-      background: rgba(79, 70, 229, 0.2);
-      color: var(--primary-color);
-    }
-
-    .wallet-address {
-      background: var(--bg-dark);
-      padding: 1rem;
-      border-radius: 0.375rem;
-      font-family: monospace;
-      word-break: break-all;
-      margin-top: 0.5rem;
-      border: 1px solid var(--border-color);
-    }
-
-    .copy-btn {
-      cursor: pointer;
-      color: var(--primary-color);
-      margin-left: 0.5rem;
-    }
-
-    .copy-btn:hover {
-      color: var(--primary-hover);
-    }
-
-    @media (max-width: 640px) {
-      .profile-header {
-        padding: 1.5rem 1rem;
-      }
-
-      .profile-avatar {
-        width: 80px;
-        height: 80px;
-        font-size: 2.5rem;
-      }
-
-      .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .info-row {
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-
-      .info-value {
-        text-align: left;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="../css/profile.css">
 </head>
 <body>
-  <!-- Navigation -->
-  <div id="navbar"></div>
+  <!-- Navigation will be injected by navbar.js -->
+  <nav id="navbar"></nav>
 
-  <!-- Main Content -->
   <main class="main-content">
     <div class="container">
-      <div id="alert-container"></div>
+      <h1 class="section-title">🌾 My Farming Profile</h1>
 
       <!-- Profile Header -->
       <div class="profile-header">
-        <div class="profile-avatar" id="profile-avatar">👤</div>
-        <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;" id="profile-name">Loading...</h1>
-        <p style="opacity: 0.9;" id="profile-email">Loading...</p>
-        <span class="btn btn-ghost" style="margin-top: 0.5rem; text-transform: uppercase; font-size: 0.75rem; font-weight: 600;" id="profile-role">
-          Loading...
-        </span>
+        <div class="profile-avatar">
+          🌾
+        </div>
+        <h2 id="profile-name">Loading...</h2>
+        <p id="profile-role" class="text-secondary">-</p>
       </div>
 
       <!-- Stats Grid -->
-      <div class="stats-grid" id="stats-grid">
-        <!-- Stats will be loaded dynamically -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-products">0</div>
+          <div class="stat-label">Products</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-transactions">0</div>
+          <div class="stat-label">Transactions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-balance">0 ETH</div>
+          <div class="stat-label">Wallet Balance</div>
+        </div>
       </div>
 
       <!-- Wallet Information -->
-      <div class="card" style="margin-bottom: 2rem;">
-        <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">💳 Wallet Information</h2>
-        
+      <div class="card mb-2">
+        <h2 class="section-title">💼 Wallet Information</h2>
         <div class="info-row">
-          <span class="info-label">Wallet Status</span>
-          <span class="info-value" id="wallet-status">Not Connected</span>
-        </div>
-
-        <div class="info-row">
-          <span class="info-label">Network</span>
-          <span class="info-value" id="network-name">-</span>
-        </div>
-
-        <div class="info-row">
-          <span class="info-label">Balance</span>
-          <span class="info-value" id="wallet-balance">-</span>
-        </div>
-
-        <div style="margin-top: 1rem;">
           <span class="info-label">
             Wallet Address
             <span class="copy-btn" onclick="copyWalletAddress()" title="Copy address">📋</span>
@@ -208,14 +52,14 @@
           <div class="wallet-address" id="wallet-address">Not connected</div>
         </div>
 
-        <button id="connect-wallet-btn" class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="connectWallet()">
+        <button id="connect-wallet-btn" class="btn btn-primary w-100 mt-1rem" onclick="connectWallet()">
           Connect Wallet
         </button>
       </div>
 
       <!-- Account Information -->
-      <div class="card" style="margin-bottom: 2rem;">
-        <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">📋 Account Information</h2>
+      <div class="card mb-2">
+        <h2 class="section-title">📋 Account Information</h2>
         
         <div class="info-row">
           <span class="info-label">Full Name</span>
@@ -240,15 +84,15 @@
 
       <!-- Transaction History -->
       <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-          <h2 style="font-size: 1.5rem; font-weight: 600; margin: 0;">📜 Transaction History</h2>
+        <div class="flex space-between align-center mb-1rem">
+          <h2 class="section-title" style="margin: 0;">📜 Transaction History</h2>
           <button class="btn btn-outline" onclick="refreshTransactions()">
             🔄 Refresh
           </button>
         </div>
 
         <div id="transactions-list">
-          <p style="color: var(--text-secondary); text-align: center;">Loading transactions...</p>
+          <p class="text-secondary text-center">Loading transactions...</p>
         </div>
       </div>
     </div>

@@ -13,15 +13,15 @@
 
   <!-- Main Content -->
   <main class="main-content">
-    <div class="container" style="padding: 0 1rem;">
-      <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 1.5rem;">Customer Dashboard</h1>
+  <div class="container padding-x-1rem">
+  <h1 class="customer-title">Customer Dashboard</h1>
 
       <div id="alert-container"></div>
 
       <!-- Scan QR Code Section -->
       <div class="card">
-        <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">Scan QR Code</h2>
-        <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+  <h2 class="section-title">Scan QR Code</h2>
+  <p class="text-secondary mb-1rem">
           Scan a produce QR code to view its complete history and verify authenticity.
         </p>
         <a href="/scan.html" class="btn btn-primary">Open Scanner</a>
@@ -29,11 +29,11 @@
 
       <!-- Browse Available Produce -->
       <div class="card">
-        <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">Browse Available Produce</h2>
+  <h2 class="section-title">Browse Available Produce</h2>
         
         <div class="form-group">
           <label class="form-label" for="search-produce">Search by Produce ID</label>
-          <div style="display: flex; gap: 0.5rem;">
+          <div class="flex gap-0-5rem">
             <input 
               type="number" 
               id="search-produce" 
@@ -41,22 +41,22 @@
               placeholder="Enter produce ID"
               min="1"
             >
-            <button id="search-btn" class="btn btn-primary" style="white-space: nowrap;">
+            <button id="search-btn" class="btn btn-primary nowrap">
               View Details
             </button>
           </div>
         </div>
 
-        <div id="produce-details" style="margin-top: 1.5rem;">
+  <div id="produce-details" class="mt-1-5rem">
           <!-- Produce details will be displayed here -->
         </div>
       </div>
 
       <!-- Purchase History -->
       <div class="card">
-        <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">My Purchase History</h2>
+  <h2 class="section-title">My Purchase History</h2>
         <div id="purchase-history">
-          <p style="color: var(--text-secondary);">Your purchase history will appear here.</p>
+          <p class="text-secondary">Your purchase history will appear here.</p>
         </div>
       </div>
     </div>
