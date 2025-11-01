@@ -57,8 +57,28 @@ const utils = {
     localStorage.removeItem('accessToken');
   },
 
+  // Check authentication by verifying current-user endpoint which uses cookies
+  async checkAuth() {
+    try {
+      const res = await this.apiCall('/api/v1/users/current-user', { method: 'GET' });
+      const user = res?.data || null;
+      if (user) {
+        this.saveUser(user);
+        return true;
+      }
+      this.clearUser();
+      return false;
+    } catch (err) {
+      // Not authenticated or network error
+      this.clearUser();
+      return false;
+    }
+  },
+
+  // Compatibility helper (synchronous) — falls back to checking stored user
   isAuthenticated() {
-    return !!this.getAuthToken();
+    const user = this.getUser();
+    return !!user;
   },
 
   // User data helpers
@@ -111,6 +131,7 @@ const utils = {
   // Logout
   async logout() {
     try {
+      // Call backend logout which will clear cookies server-side
       await this.apiCall('/api/v1/users/logout', { method: 'POST' });
     } catch (error) {
       console.error('Logout error:', error);

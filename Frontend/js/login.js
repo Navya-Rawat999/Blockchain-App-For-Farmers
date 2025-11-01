@@ -35,10 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       // Save auth tokens and user data
-      if (loginData.data.AccessToken) {
-        utils.saveAuthToken(loginData.data.AccessToken);
-      }
-      if (loginData.data.user) {
+      // Backend sets tokens as cookies. Save only user info from response.
+      if (loginData.data && loginData.data.user) {
         utils.saveUser(loginData.data.user);
       }
 

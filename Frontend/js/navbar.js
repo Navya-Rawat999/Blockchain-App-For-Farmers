@@ -1,18 +1,34 @@
-// Navigation component - included on all pages
-function initNavbar() {
+import utils from '../js/utils.js';
+
+// Navigation component - included on all pages. Dynamically shows links based on auth.
+async function initNavbar() {
+  const isAuth = await utils.checkAuth();
+  const user = utils.getUser();
+
+  const authLinks = isAuth ? `
+      <a href="marketplace.html" class="btn btn-ghost">🛒 Marketplace</a>
+      <a href="scan.html" class="btn btn-ghost">📱 Scan</a>
+      <a href="farmer.html" class="btn btn-ghost">🧑‍🌾 Farmer</a>
+      <a href="customer.html" class="btn btn-ghost">👤 Customer</a>
+      <a href="profile.html" class="btn btn-ghost">⚙️ Profile</a>
+      <button id="logout-btn" class="btn btn-outline btn-sm">Logout</button>
+      <a href="wallet.html" class="btn btn-primary">Connect Wallet</a>
+    ` : `
+      <a href="marketplace.html" class="btn btn-ghost">🛒 Marketplace</a>
+      <a href="scan.html" class="btn btn-ghost">📱 Scan</a>
+      <a href="farmer.html" class="btn btn-ghost">🧑‍🌾 Farmer</a>
+      <a href="customer.html" class="btn btn-ghost">👤 Customer</a>
+      <a href="login.html" class="btn btn-outline btn-sm">Login</a>
+      <a href="register.html" class="btn btn-outline btn-sm">Register</a>
+      <a href="wallet.html" class="btn btn-primary">Connect Wallet</a>
+    `;
+
   const navbarHTML = `
     <nav class="navbar">
       <div class="navbar-container">
         <a href="index.html" class="navbar-brand">Kissan Sathi 🌾</a>
         <div class="navbar-links">
-          <a href="marketplace.html" class="btn btn-ghost">🛒 Marketplace</a>
-          <a href="scan.html" class="btn btn-ghost">📱 Scan</a>
-          <a href="farmer.html" class="btn btn-ghost">🧑‍🌾 Farmer</a>
-          <a href="customer.html" class="btn btn-ghost">👤 Customer</a>
-          <a href="profile.html" class="btn btn-ghost">⚙️ Profile</a>
-          <a href="login.html" class="btn btn-outline btn-sm">Login</a>
-          <a href="register.html" class="btn btn-outline btn-sm">Register</a>
-          <a href="wallet.html" class="btn btn-primary">Connect Wallet</a>
+          ${authLinks}
         </div>
       </div>
     </nav>
@@ -21,6 +37,14 @@ function initNavbar() {
   const navbarContainer = document.getElementById('navbar');
   if (navbarContainer) {
     navbarContainer.innerHTML = navbarHTML;
+
+    // Attach logout handler if present
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async () => {
+        await utils.logout();
+      });
+    }
   }
 }
 

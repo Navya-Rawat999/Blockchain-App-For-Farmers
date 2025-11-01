@@ -38,8 +38,8 @@ async function initWeb3() {
 
 // Register produce form handler
 document.addEventListener('DOMContentLoaded', async () => {
-  // Check authentication
-  if (!utils.isAuthenticated()) {
+  // Check authentication via cookies
+  if (!(await utils.checkAuth())) {
     utils.redirect('login.html');
     return;
   }
