@@ -6,6 +6,13 @@ let signer = null;
 let userAddress = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Check authentication first
+  const isAuthenticated = await utils.checkAuth();
+  if (!isAuthenticated) {
+    window.location.href = '/HTML/login.html';
+    return;
+  }
+
   const connectBtn = document.getElementById('connect-wallet-btn');
   const disconnectBtn = document.getElementById('disconnect-wallet-btn');
 

@@ -1,5 +1,15 @@
 import utils from '../js/utils.js';
 
+// Check authentication when the script loads
+document.addEventListener('DOMContentLoaded', async () => {
+  const isAuthenticated = await utils.checkAuth();
+  if (!isAuthenticated) {
+    window.location.href = '/HTML/login.html';
+    return;
+  }
+  initScanner();
+});
+
 // QR Code Scanner
 let html5QrcodeScanner = null;
 let contract = null;
@@ -11,6 +21,12 @@ const CONTRACT_ABI = [
 ];
 
 const CONTRACT_ADDRESS = '0x...'; // Replace with your deployed contract address
+
+// Initialize the scanner and setup
+async function initScanner() {
+  await initWeb3();
+  startQRScanner();
+}
 
 // Initialize Web3 connection
 async function initWeb3() {
