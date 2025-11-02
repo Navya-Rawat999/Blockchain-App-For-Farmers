@@ -20,11 +20,11 @@ const router = Router()
 router.route("/register").post(
   upload.fields([ 
     {
-      name: "avatar",
+      name: "profilePic",
       maxCount: 1
     },
     {
-      name: "idProof",
+      name: "valid_id_proof",
       maxCount: 1,
     }
   ]),   

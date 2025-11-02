@@ -40,14 +40,11 @@ const registerUser = asyncHandler(async(req, res) => {
 
   if(role !== 'famer' && role !== 'customer') throw new ApiError(400, "Role was not correctly filled")
   
-  const avatar_LocalPath = req.files?.avatar?.[0]?.path;
-  if(!avatar_LocalPath) throw new ApiError(400, "Profile picture is required");
+  const profilePic_LocalPath = req.files?.profilePic[0]?.path
+ if(!profilePic_LocalPath) throw new ApiError(400, "profilePic file is required")
 
-  const idProof_LocalPath = req.files?.idProof?.[0]?.path;
-  // Make ID proof required only for farmers and customers
-  if((role === 'farmer' || role === 'customer') && !idProof_LocalPath) {
-    throw new ApiError(400, "ID proof is required for farmer/customer registration");
-  }
+  const id_proof_LocalPath = req.files?.valid_id_proof[0]?.path
+  if(!id_proof_LocalPath) throw new ApiError(400, "ID_proof not uploaded")
 
   const profilePic = await uploadOnCloudinary(profilePic_LocalPath)  
   if(!profilePic) throw new ApiError(400, "profilePic file was not uploaded on cloudinary")
