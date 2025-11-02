@@ -60,9 +60,28 @@ const utils = {
     localStorage.removeItem('accessToken');
   },
 
+  // Refresh access token using refresh token from cookies
+  async refreshAccessToken() {
+    try {
+      const res = await this.apiCall('/users/refresh-token', { method: 'POST' });
+      if (res?.data?.AccessToken) {
+        this.saveAuthToken(res.data.AccessToken);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      return false;
+    }
+  },
+
   // Check authentication by verifying current-user endpoint which uses cookies
   async checkAuth() {
     try {
+      // First, try to refresh the access token using refresh token from cookies
+      await this.refreshAccessToken();
+      
+      // Then fetch current user
       const res = await this.apiCall('/users/current-user', { method: 'GET' });
       const user = res?.data || null;
       if (user) {
@@ -73,6 +92,7 @@ const utils = {
       return false;
     } catch (err) {
       // Not authenticated or network error
+      console.error('Auth check failed:', err);
       this.clearUser();
       return false;
     }
@@ -135,13 +155,13 @@ const utils = {
   async logout() {
     try {
       // Call backend logout which will clear cookies server-side
-      await this.apiCall('/api/v1/users/logout', { method: 'POST' });
+      await this.apiCall('/users/logout', { method: 'POST' });
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
       this.clearAuthToken();
       this.clearUser();
-      this.redirect('index.html');
+      this.redirect('login.html');
     }
   },
 };

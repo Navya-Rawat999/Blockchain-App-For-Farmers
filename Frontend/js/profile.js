@@ -381,7 +381,7 @@ async function refreshTransactions() {
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', async () => {
-  // Check authentication via cookies
+  // Check authentication via refresh token and cookies
   if (!(await utils.checkAuth())) {
     utils.redirect('login.html');
     return;

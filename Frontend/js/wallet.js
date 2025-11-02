@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Check authentication first
   const isAuthenticated = await utils.checkAuth();
   if (!isAuthenticated) {
-    window.location.href = '/HTML/login.html';
+    utils.redirect('login.html');
     return;
   }
 

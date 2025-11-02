@@ -2,6 +2,7 @@ import utils from '../js/utils.js';
 
 // Navigation component - included on all pages. Dynamically shows links based on auth.
 async function initNavbar() {
+  // Always check auth on navbar init to ensure tokens are fresh
   const isAuth = await utils.checkAuth();
   const user = utils.getUser();
 

@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       utils.showAlert(error.message || 'Registration failed. Please try again.', 'error');
       submitBtn.disabled = false;
-      submitBtn.textContent = role ? `Create ${role.charAt(0).toUpperCase() + role.slice(1)} Account` : 'Create Account';
+      submitBtn.textContent = 'Create Account';
     }
   });
 });
