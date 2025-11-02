@@ -39,50 +39,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // Handle form submission
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    try {
-      const formData = new FormData();
-      formData.append('role', roleSelect.value);
-      formData.append('fullname', document.getElementById('fullName').value);
-      formData.append('email', document.getElementById('email').value);
-      formData.append('username', document.getElementById('username').value);
-      formData.append('password', document.getElementById('password').value);
-      
-      const profilePic = document.getElementById('profilePic').files[0];
-      if (profilePic) {
-        formData.append('avatar', profilePic);
-      }
-      
-      const idProof = document.getElementById('idProof').files[0];
-      if (idProof) {
-        formData.append('idProof', idProof);
-      }
 
-      // Show loading state
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Creating Account...';
-
-      // Make API call
-      const result = await utils.apiCall('/users/register', {
-        method: 'POST',
-        body: formData,
-      });
-
-      // Show success message
-      utils.showAlert('Account created successfully! Redirecting to login...', 'success');
-      
-      // Redirect to login page after a short delay
-      setTimeout(() => {
-        window.location.href = '/HTML/login.html';
-      }, 2000);
-
-    } catch (error) {
-      // Show error message
-      utils.showAlert(error.message || 'Failed to create account', 'error');
-    } finally {
-      // Reset button state
-      submitBtn.disabled = false;
-      submitBtn.textContent = roleSelect.value === 'farmer' ? 'Create Farmer Account' : 'Create Customer Account';
-    }
+    // Get form values
+    const role = roleSelect.value;
+    const fullName = document.getElementById('fullName').value;
+    const email = document.getElementById('email').value;
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const profilePic = document.getElementById('profilePic').files[0];
+    const idProof = document.getElementById('idProof').files[0];
 
     // Validate role selection
     if (!role) {
@@ -103,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Show loading state
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner"></span> Creating account...';
 
@@ -118,22 +84,28 @@ document.addEventListener('DOMContentLoaded', () => {
       formData.append('valid_id_proof', idProof); // Backend expects this field name
 
       // Make API call
-      await utils.apiCall('/api/v1/users/register', {
+      const result = await utils.apiCall('/users/register', {
         method: 'POST',
         body: formData,
       });
 
-      utils.showAlert('Registration successful! Please login to continue.', 'success');
+      // Show success message
+      utils.showAlert('Account created successfully! Redirecting to login...', 'success');
       
       // Redirect to login page after a short delay
       setTimeout(() => {
         utils.redirect('login.html');
-      }, 1500);
+      }, 2000);
 
     } catch (error) {
-      utils.showAlert(error.message || 'Registration failed. Please try again.', 'error');
+      // Show error message
+      utils.showAlert(error.message || 'Failed to create account', 'error');
+    } finally {
+      // Reset button state
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Create Account';
+      const buttonText = role === 'farmer' ? 'Create Farmer Account' : 
+                        role === 'customer' ? 'Create Customer Account' : 'Create Account';
+      submitBtn.textContent = buttonText;
     }
   });
 });

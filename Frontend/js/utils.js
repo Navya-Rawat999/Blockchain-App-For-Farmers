@@ -10,7 +10,7 @@ const utils = {
   // API call helper using axios
   async apiCall(endpoint, options = {}) {
     try {
-      const { method = 'GET', body, headers = {} } = options;
+      const { method = 'GET', body, headers = {}, ...otherOptions } = options;
       
       // Ensure endpoint doesn't have duplicate /api/v1
       const cleanEndpoint = endpoint.startsWith('/api/v1') ? endpoint.substring(7) : endpoint;
@@ -18,14 +18,14 @@ const utils = {
       const config = {
         method,
         url: cleanEndpoint,
-        headers,
-        ...options
+        headers: { ...headers },
+        ...otherOptions
       };
 
       // Handle different body types
       if (body instanceof FormData) {
         config.data = body;
-        // Let axios set the Content-Type for FormData
+        // Don't set Content-Type for FormData - let axios set it with boundary
       } else if (body) {
         config.data = typeof body === 'string' ? JSON.parse(body) : body;
         config.headers['Content-Type'] = 'application/json';

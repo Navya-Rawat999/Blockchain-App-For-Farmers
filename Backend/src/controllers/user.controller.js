@@ -68,7 +68,7 @@ const registerUser = asyncHandler(async(req, res) => {
     user_id = farmer._id
   }
   else if (role === 'customer'){
-    const customer = Customer.create({
+    const customer = await Customer.create({
     fullName,
     profilePic: profilePic?.url,
     License: id_proof?.url,
