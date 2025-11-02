@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'http://localhost:8000/api/v1';
 
 // Configure axios defaults
 axios.defaults.baseURL = API_BASE;

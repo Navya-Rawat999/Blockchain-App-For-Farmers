@@ -39,14 +39,50 @@ document.addEventListener('DOMContentLoaded', () => {
   // Handle form submission
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    try {
+      const formData = new FormData();
+      formData.append('role', roleSelect.value);
+      formData.append('fullname', document.getElementById('fullName').value);
+      formData.append('email', document.getElementById('email').value);
+      formData.append('username', document.getElementById('username').value);
+      formData.append('password', document.getElementById('password').value);
+      
+      const profilePic = document.getElementById('profilePic').files[0];
+      if (profilePic) {
+        formData.append('avatar', profilePic);
+      }
+      
+      const idProof = document.getElementById('idProof').files[0];
+      if (idProof) {
+        formData.append('idProof', idProof);
+      }
 
-    const role = roleSelect.value;
-    const fullName = document.getElementById('fullName').value;
-    const email = document.getElementById('email').value;
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    const profilePic = document.getElementById('profilePic').files[0];
-    const idProof = document.getElementById('idProof').files[0];
+      // Show loading state
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating Account...';
+
+      // Make API call
+      const result = await utils.apiCall('/users/register', {
+        method: 'POST',
+        body: formData,
+      });
+
+      // Show success message
+      utils.showAlert('Account created successfully! Redirecting to login...', 'success');
+      
+      // Redirect to login page after a short delay
+      setTimeout(() => {
+        window.location.href = '/HTML/login.html';
+      }, 2000);
+
+    } catch (error) {
+      // Show error message
+      utils.showAlert(error.message || 'Failed to create account', 'error');
+    } finally {
+      // Reset button state
+      submitBtn.disabled = false;
+      submitBtn.textContent = roleSelect.value === 'farmer' ? 'Create Farmer Account' : 'Create Customer Account';
+    }
 
     // Validate role selection
     if (!role) {
