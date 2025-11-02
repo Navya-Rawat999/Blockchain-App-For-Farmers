@@ -29,12 +29,44 @@ async function connectWallet() {
     signer = await provider.getSigner();
     userAddress = await signer.getAddress();
 
+    // Update display
+    document.getElementById('wallet-address').textContent = userAddress;
+    
+    // Save to localStorage
+    localStorage.setItem('saved_wallet_address', userAddress);
+
+    // Show MetaMask info
+    document.getElementById('metamask-info').style.display = 'block';
+    document.getElementById('connect-wallet-btn').textContent = 'MetaMask Connected';
+    document.getElementById('connect-wallet-btn').disabled = true;
+    document.getElementById('disconnect-wallet-btn').style.display = 'inline-block';
+
     await loadWalletInfo();
     utils.showAlert('Wallet connected successfully!', 'success');
   } catch (error) {
     console.error('Wallet connection error:', error);
     utils.showAlert('Failed to connect wallet. Please try again.', 'error');
   }
+}
+
+// Disconnect wallet
+function disconnectWallet() {
+  provider = null;
+  signer = null;
+  
+  // Hide MetaMask info
+  document.getElementById('metamask-info').style.display = 'none';
+  document.getElementById('connect-wallet-btn').textContent = 'Connect MetaMask';
+  document.getElementById('connect-wallet-btn').disabled = false;
+  document.getElementById('disconnect-wallet-btn').style.display = 'none';
+  
+  // Keep the saved address from manual input or set to "Not set"
+  const savedAddress = localStorage.getItem('saved_wallet_address');
+  if (!savedAddress) {
+    document.getElementById('wallet-address').textContent = 'Not set';
+  }
+  
+  utils.showAlert('MetaMask disconnected', 'success');
 }
 
 // Load wallet information
@@ -44,44 +76,17 @@ async function loadWalletInfo() {
   }
 
   try {
-    // Get wallet address
-    const address = await signer.getAddress();
-    document.getElementById('wallet-address').textContent = address;
-    document.getElementById('wallet-status').innerHTML = '<span style="color: var(--success);">✓ Connected</span>';
-
     // Get network
     const network = await provider.getNetwork();
     document.getElementById('network-name').textContent = network.name || `Chain ID: ${network.chainId}`;
 
     // Get balance
-    const balance = await provider.getBalance(address);
+    const balance = await provider.getBalance(userAddress);
     const balanceInEth = ethers.formatEther(balance);
     document.getElementById('wallet-balance').textContent = `${parseFloat(balanceInEth).toFixed(4)} ETH`;
-
-    // Update button
-    const connectBtn = document.getElementById('connect-wallet-btn');
-    connectBtn.textContent = 'Wallet Connected';
-    connectBtn.disabled = true;
-    connectBtn.style.opacity = '0.6';
   } catch (error) {
     console.error('Error loading wallet info:', error);
   }
-}
-
-// Copy wallet address to clipboard
-function copyWalletAddress() {
-  const address = document.getElementById('wallet-address').textContent;
-  if (address === 'Not connected') {
-    utils.showAlert('Please connect your wallet first', 'warning');
-    return;
-  }
-
-  navigator.clipboard.writeText(address).then(() => {
-    utils.showAlert('Address copied to clipboard!', 'success');
-  }).catch(err => {
-    console.error('Failed to copy address:', err);
-    utils.showAlert('Failed to copy address', 'error');
-  });
 }
 
 // Load user profile data
@@ -93,18 +98,18 @@ function loadProfileData() {
     return;
   }
 
-  // Set profile header
-  document.getElementById('profile-name').textContent = user.fullname || user.username || 'User';
-  document.getElementById('profile-email').textContent = user.email || 'No email provided';
+  // Set profile header - use the correct field names from backend
+  document.getElementById('profile-name').textContent = user.fullName || user.username || 'User';
   document.getElementById('profile-role').textContent = user.role || 'User';
 
   // Set avatar emoji based on role
   const avatarEmoji = user.role === 'farmer' ? '🧑‍🌾' : user.role === 'customer' ? '🛒' : '👤';
   document.getElementById('profile-avatar').textContent = avatarEmoji;
 
-  // Set account information
-  document.getElementById('info-fullname').textContent = user.fullname || user.username || 'N/A';
+  // Set account information - use correct field names
+  document.getElementById('info-fullname').textContent = user.fullName || 'N/A';
   document.getElementById('info-email').textContent = user.email || 'N/A';
+  document.getElementById('info-username').textContent = user.username || 'N/A';
   document.getElementById('info-role').textContent = user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'N/A';
   
   // Set member since (if available)
@@ -118,6 +123,62 @@ function loadProfileData() {
   } else {
     document.getElementById('member-since').textContent = 'N/A';
   }
+
+  // Load saved wallet address if any
+  loadSavedWalletAddress();
+}
+
+// Save wallet address manually
+function saveWalletAddress() {
+  const addressInput = document.getElementById('manual-wallet-address');
+  const address = addressInput.value.trim();
+  
+  if (!address) {
+    utils.showAlert('Please enter a wallet address', 'warning');
+    return;
+  }
+
+  // Basic validation for Ethereum address
+  if (!address.startsWith('0x') || address.length !== 42) {
+    utils.showAlert('Please enter a valid Ethereum address (starts with 0x and 42 characters long)', 'error');
+    return;
+  }
+
+  // Save to localStorage
+  localStorage.setItem('saved_wallet_address', address);
+  
+  // Update display
+  document.getElementById('wallet-address').textContent = address;
+  
+  // Clear input
+  addressInput.value = '';
+  
+  utils.showAlert('Wallet address saved successfully!', 'success');
+}
+
+// Load saved wallet address
+function loadSavedWalletAddress() {
+  const savedAddress = localStorage.getItem('saved_wallet_address');
+  if (savedAddress) {
+    document.getElementById('wallet-address').textContent = savedAddress;
+    userAddress = savedAddress; // Set for blockchain operations
+  }
+}
+
+// Copy wallet address to clipboard
+function copyWalletAddress() {
+  const address = document.getElementById('wallet-address').textContent;
+  if (address === 'Not set' || address === 'Not connected') {
+    utils.showAlert('No wallet address to copy', 'warning');
+    return;
+  }
+
+  navigator.clipboard.writeText(address).then(() => {
+    utils.showAlert('Address copied to clipboard!', 'success');
+  }).catch(err => {
+    console.error('Failed to copy address:', err);
+    utils.showAlert('Failed to copy address', 'error');
+  });
 }
 
 // Load user statistics
@@ -428,5 +489,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Make functions globally available
 window.connectWallet = connectWallet;
+window.disconnectWallet = disconnectWallet;
 window.copyWalletAddress = copyWalletAddress;
+window.saveWalletAddress = saveWalletAddress;
 window.refreshTransactions = refreshTransactions;

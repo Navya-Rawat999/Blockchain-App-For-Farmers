@@ -254,6 +254,13 @@ async function loadProducts() {
   }
 }
 
+// Get reviews for specific produce
+function getProduceReviews(produceId) {
+  const saved = localStorage.getItem('produce_reviews');
+  const allReviews = saved ? JSON.parse(saved) : [];
+  return allReviews.filter(review => review.produceId === produceId);
+}
+
 // Display products in grid
 function displayProducts(products) {
   const grid = document.getElementById('products-grid');
@@ -269,6 +276,12 @@ function displayProducts(products) {
     const statusClass = isAvailable ? 'status-available' : 'status-sold';
     const date = new Date(Number(product.registrationTimestamp) * 1000);
 
+    // Get reviews for this product
+    const reviews = getProduceReviews(product.id);
+    const averageRating = reviews.length > 0 
+      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+      : 0;
+
     return `
       <div class="product-card">
         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
@@ -276,19 +289,23 @@ function displayProducts(products) {
           <span class="product-status ${statusClass}">${product.currentStatus}</span>
         </div>
 
-        <div style="display: grid; gap: 0.5rem; margin-bottom: 1rem; font-size: 0.875rem;">
-          <div>
-            <strong>Origin:</strong> ${product.originFarm}
+        ${reviews.length > 0 ? `
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+            <span style="color: #ffd700; font-size: 1rem;">⭐ ${averageRating}</span>
+            <span style="color: var(--text-secondary); font-size: 0.875rem;">
+              (${reviews.length})
+            </span>
           </div>
-          <div>
-            <strong>Farmer:</strong>
+        ` : ''}
+
+        <div style="display: grid; gap: 0.5rem; margin-bottom: 1rem; font-size: 0.875rem;">
+          <div><strong>Origin:</strong> ${product.originFarm}</div>
+          <div><strong>Farmer:</strong>
             <code style="font-size: 0.7rem; background-color: rgba(0,0,0,0.3); padding: 0.125rem 0.25rem; border-radius: 0.25rem;">
               ${product.originalFarmer.slice(0, 6)}...${product.originalFarmer.slice(-4)}
             </code>
           </div>
-          <div>
-            <strong>Registered:</strong> ${date.toLocaleDateString()}
-          </div>
+          <div><strong>Registered:</strong> ${date.toLocaleDateString()}</div>
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; border-top: 1px solid var(--border-color);">

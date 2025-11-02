@@ -102,6 +102,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadProduceList();
 });
 
+// Get reviews for specific produce
+function getProduceReviews(produceId) {
+  const saved = localStorage.getItem('produce_reviews');
+  const allReviews = saved ? JSON.parse(saved) : [];
+  return allReviews.filter(review => review.produceId === produceId);
+}
+
 // Load and display farmer's produce
 async function loadProduceList() {
   const produceListContainer = document.getElementById('produce-list');
@@ -158,11 +165,17 @@ async function loadProduceList() {
       return;
     }
 
-    // Display produce items
+    // Display produce items with reviews
     const produceHTML = myProduce.map(item => {
       const priceInEth = ethers.formatEther(item.priceInWei);
       const date = new Date(Number(item.registrationTimestamp) * 1000);
       const statusColor = item.currentStatus === 'Sold' ? 'var(--error)' : 'var(--success)';
+      
+      // Get reviews for this produce
+      const reviews = getProduceReviews(item.id);
+      const averageRating = reviews.length > 0 
+        ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+        : 0;
       
       return `
         <div style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
@@ -172,6 +185,23 @@ async function loadProduceList() {
               ${item.currentStatus}
             </span>
           </div>
+          
+          ${reviews.length > 0 ? `
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <span style="color: #ffd700; font-size: 1.1rem;">⭐ ${averageRating}</span>
+              <span style="color: var(--text-secondary); font-size: 0.875rem;">
+                (${reviews.length} review${reviews.length !== 1 ? 's' : ''})
+              </span>
+              <button onclick="showProductReviews('${item.id}', '${item.name}')" class="btn-link">
+                View Reviews
+              </button>
+            </div>
+          ` : `
+            <div style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.75rem;">
+              No reviews yet
+            </div>
+          `}
+          
           <div style="display: grid; gap: 0.5rem; font-size: 0.875rem; margin-bottom: 1rem;">
             <div><strong>ID:</strong> ${item.id}</div>
             <div><strong>Origin:</strong> ${item.originFarm}</div>
@@ -245,6 +275,78 @@ async function updateStatus(produceId, produceName) {
   } catch (error) {
     console.error('Status update error:', error);
     utils.showAlert(error.message || 'Failed to update status', 'error');
+  }
+}
+
+// Show product reviews in modal
+window.showProductReviews = function(produceId, productName) {
+  const reviews = getProduceReviews(produceId);
+  
+  if (reviews.length === 0) {
+    utils.showAlert('No reviews yet for this product', 'info');
+    return;
+  }
+
+  const averageRating = (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1);
+  
+  const reviewsHTML = reviews.map(review => {
+    const stars = '⭐'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+    const date = new Date(review.timestamp).toLocaleDateString();
+    
+    return `
+      <div style="padding: 1rem; background-color: rgba(0,0,0,0.3); border-radius: 0.5rem; margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+          <div>
+            <div style="color: #ffd700; font-size: 1.2rem; margin-bottom: 0.25rem;">${stars}</div>
+            <div style="font-weight: 600; color: var(--text-primary);">${review.customerName}</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary);">
+              ${review.customerAddress.slice(0, 6)}...${review.customerAddress.slice(-4)}
+            </div>
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-secondary);">${date}</div>
+        </div>
+        ${review.review ? `
+          <p style="color: var(--text-secondary); margin-top: 0.75rem; font-style: italic; line-height: 1.5;">
+            "${review.review}"
+          </p>
+        ` : ''}
+        <div style="font-size: 0.75rem; color: var(--success); margin-top: 0.5rem;">
+          ✓ Verified Purchase
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const modalHTML = `
+    <div id="reviews-modal" class="modal" style="display: flex;">
+      <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+        <div class="modal-header">
+          <h2 class="modal-title">Reviews for "${productName}"</h2>
+          <button onclick="closeReviewsModal()" class="close-btn">×</button>
+        </div>
+        
+        <div style="padding: 1.5rem;">
+          <div style="text-align: center; margin-bottom: 1.5rem; padding: 1rem; background-color: rgba(16, 185, 129, 0.1); border-radius: 0.5rem;">
+            <div style="color: #ffd700; font-size: 2rem; margin-bottom: 0.5rem;">⭐ ${averageRating}</div>
+            <div style="color: var(--text-primary); font-size: 1.1rem;">Average Rating</div>
+            <div style="color: var(--text-secondary); font-size: 0.9rem;">${reviews.length} total review${reviews.length !== 1 ? 's' : ''}</div>
+          </div>
+          
+          <h3 style="margin-bottom: 1rem; color: var(--text-primary);">Customer Feedback:</h3>
+          ${reviewsHTML}
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// Close reviews modal
+window.closeReviewsModal = function() {
+  const modal = document.getElementById('reviews-modal');
+  if (modal) {
+    modal.remove();
   }
 }
 
