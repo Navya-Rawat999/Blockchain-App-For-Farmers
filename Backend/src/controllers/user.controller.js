@@ -38,7 +38,7 @@ const registerUser = asyncHandler(async(req, res) => {
 
   if(userExisted) throw new ApiError(409, "User with username or email already exists")
 
-  if(role !== 'famer' && role !== 'customer') throw new ApiError(400, "Role was not correctly filled")
+  if(role !== 'farmer' && role !== 'customer') throw new ApiError(400, "Role was not correctly filled")
   
   const profilePic_LocalPath = req.files?.profilePic[0]?.path
  if(!profilePic_LocalPath) throw new ApiError(400, "profilePic file is required")
