@@ -12,9 +12,12 @@ const utils = {
     try {
       const { method = 'GET', body, headers = {} } = options;
       
+      // Ensure endpoint doesn't have duplicate /api/v1
+      const cleanEndpoint = endpoint.startsWith('/api/v1') ? endpoint.substring(7) : endpoint;
+      
       const config = {
         method,
-        url: endpoint,
+        url: cleanEndpoint,
         headers,
         ...options
       };
@@ -60,7 +63,7 @@ const utils = {
   // Check authentication by verifying current-user endpoint which uses cookies
   async checkAuth() {
     try {
-      const res = await this.apiCall('/api/v1/users/current-user', { method: 'GET' });
+      const res = await this.apiCall('/users/current-user', { method: 'GET' });
       const user = res?.data || null;
       if (user) {
         this.saveUser(user);
