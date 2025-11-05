@@ -16,25 +16,22 @@ const CONTRACT_ABI = [
   "function getProduceIdsByName(string memory _name) public view returns (uint256[] memory)"
 ];
 
-const CONTRACT_ADDRESS = '0x...'; // Replace with your deployed contract address
+const CONTRACT_ADDRESS = '0x742d35Cc6135C4Ad4C006C8C704aC8DC7CE18F72'; // Replace with your deployed contract address
 
 // Initialize Web3 connection
 async function initWeb3() {
-  if (typeof window.ethereum !== 'undefined') {
-    try {
-      provider = new ethers.BrowserProvider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      signer = await provider.getSigner();
-      contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-      return true;
-    } catch (error) {
-      console.error('Web3 initialization error:', error);
-      return false;
-    }
-  } else {
-    utils.showAlert('Please install MetaMask to use blockchain features', 'warning');
-    return false;
+  if (!window.walletService.isConnected) {
+    await window.walletService.connectWallet();
   }
+  
+  if (window.walletService.isConnected) {
+    provider = window.walletService.provider;
+    signer = window.walletService.signer;
+    contract = window.walletService.getContract(CONTRACT_ABI);
+    return contract !== null;
+  }
+  
+  return false;
 }
 
 // Load cart from localStorage
@@ -202,55 +199,79 @@ async function checkout() {
   }
 }
 
-// Load all products from blockchain
+// Load all products from database (with blockchain sync)
 async function loadProducts() {
   const grid = document.getElementById('products-grid');
   grid.innerHTML = '<p style="color: var(--text-secondary); grid-column: 1/-1; text-align: center;">Loading products...</p>';
 
   try {
-    if (!contract) {
-      const initialized = await initWeb3();
-      if (!initialized) {
-        grid.innerHTML = '<p style="color: var(--error); grid-column: 1/-1; text-align: center;">Please connect your wallet to view products</p>';
-        return;
-      }
-    }
+    // Load from database first (faster)
+    const searchParams = new URLSearchParams({
+      page: 1,
+      limit: 20,
+      status: 'available',
+      sortBy: 'createdAt',
+      sortOrder: 'desc'
+    });
 
-    // Get the next produce ID to know how many items exist
-    const nextId = await contract.nextProduceId();
-    const totalItems = Number(nextId) - 1;
+    const response = await utils.apiCall(`/api/v1/produce/marketplace?${searchParams}`, {
+      method: 'GET'
+    });
 
-    if (totalItems === 0) {
+    allProducts = response.data.items || [];
+
+    if (allProducts.length === 0) {
       grid.innerHTML = '<p style="color: var(--text-secondary); grid-column: 1/-1; text-align: center;">No products available yet.</p>';
       return;
     }
 
-    allProducts = [];
-
-    // Fetch all products
-    for (let i = 1; i <= totalItems; i++) {
-      try {
-        const details = await contract.getProduceDetails(i);
-        allProducts.push({
-          id: details[0].toString(),
-          name: details[1],
-          originalFarmer: details[2],
-          currentSeller: details[3],
-          currentStatus: details[4],
-          priceInWei: details[5],
-          originFarm: details[6],
-          qrCode: details[7],
-          registrationTimestamp: details[8]
-        });
-      } catch (error) {
-        console.error(`Error loading product ${i}:`, error);
-      }
-    }
-
     displayProducts(allProducts);
+
+    // Optional: Sync with blockchain in background for real-time status
+    syncWithBlockchain();
+
   } catch (error) {
     console.error('Error loading products:', error);
     grid.innerHTML = '<p style="color: var(--error); grid-column: 1/-1; text-align: center;">Failed to load products. Please refresh the page.</p>';
+  }
+}
+
+// Sync database with blockchain (background process)
+async function syncWithBlockchain() {
+  if (!contract) {
+    const initialized = await initWeb3();
+    if (!initialized) return;
+  }
+
+  try {
+    // Check blockchain status for each product
+    for (const product of allProducts) {
+      try {
+        const details = await contract.getProduceDetails(product.blockchainId);
+        const blockchainStatus = details[4]; // currentStatus
+        
+        // If status changed on blockchain, update database
+        if (blockchainStatus !== product.currentStatus) {
+          await utils.apiCall(`/api/v1/produce/${product.blockchainId}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+              status: blockchainStatus
+            }),
+          });
+          
+          // Update local data
+          product.currentStatus = blockchainStatus;
+          product.isAvailable = blockchainStatus !== 'Sold';
+        }
+      } catch (err) {
+        console.log(`Sync error for product ${product.blockchainId}:`, err);
+      }
+    }
+
+    // Refresh display with updated data
+    displayProducts(allProducts);
+  } catch (error) {
+    console.log('Blockchain sync error:', error);
   }
 }
 

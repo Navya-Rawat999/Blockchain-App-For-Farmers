@@ -12,24 +12,43 @@ const CONTRACT_ABI = [
   "function getSaleHistory(uint256 _id) public view returns (tuple(uint256 ProduceId, address buyer, address seller, uint256 pricePaidInWei, uint256 SaleTimeStamp)[] memory)"
 ];
 
-const CONTRACT_ADDRESS = '0x...'; // Replace with your deployed contract address
+const CONTRACT_ADDRESS = '0x742d35Cc6135C4Ad4C006C8C704aC8DC7CE18F72'; // Replace with your deployed contract address
 
 // Initialize Web3 connection
 async function initWeb3() {
-  if (typeof window.ethereum !== 'undefined') {
-    try {
-      provider = new ethers.BrowserProvider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      signer = await provider.getSigner();
-      contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-      return true;
-    } catch (error) {
-      console.error('Web3 initialization error:', error);
-      return false;
+  if (typeof window.ethereum === 'undefined') {
+    throw new Error('MetaMask is not installed. Please install MetaMask to continue.');
+  }
+
+  // Wait for ethers to be available
+  if (typeof window.ethers === 'undefined') {
+    let attempts = 0;
+    while (typeof window.ethers === 'undefined' && attempts < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
     }
-  } else {
-    utils.showAlert('Please install MetaMask to use blockchain features', 'warning');
-    return false;
+    
+    if (typeof window.ethers === 'undefined') {
+      throw new Error('Ethers library failed to load. Please refresh the page.');
+    }
+  }
+
+  try {
+    // Request account access
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+    
+    // Set up provider and signer
+    provider = new window.ethers.BrowserProvider(window.ethereum);
+    signer = await provider.getSigner();
+    
+    // Create contract instance
+    contract = new window.ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+    
+    console.log('Web3 initialized successfully');
+    return true;
+  } catch (error) {
+    console.error('Web3 initialization error:', error);
+    throw error;
   }
 }
 

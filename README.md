@@ -55,6 +55,7 @@ A comprehensive blockchain-based platform for transparent agriculture supply cha
 - **QR Scanner**: Html5-qrcode v2.3.8
 - **Styling**: Custom CSS with dark theme
 - **Build Tool**: Node.js Express server
+- **Wallet Service**: Custom MetaMask integration
 
 ### Backend
 - **Runtime**: Node.js
@@ -63,424 +64,140 @@ A comprehensive blockchain-based platform for transparent agriculture supply cha
 - **Authentication**: JWT with HTTP-only cookies
 - **File Upload**: Multer + Cloudinary
 - **Password Hashing**: bcrypt
+- **Wallet Management**: Custom wallet controller & model
 
 ### Blockchain
 - **Smart Contract**: Solidity ^0.8.13
 - **Network**: Ethereum (Testnet/Mainnet)
-- **Wallet**: MetaMask integration
+- **Wallet**: MetaMask integration with multi-network support
 - **Price Format**: ETH/Wei
+- **Contract Address**: 0x742d35Cc6135C4Ad4C006C8C704aC8DC7CE18F72
 
-## 📁 Project Structure
+## 🦊 MetaMask Integration
 
+### Wallet Features
+- **Multi-Network Support**: Ethereum, Polygon, BSC, Testnets
+- **Direct MetaMask Integration**: No complex wallet service required
+- **Balance Tracking**: Real-time balance updates
+- **Address Management**: Secure wallet address storage
+- **Network Detection**: Automatic network switching alerts
+- **Profile Integration**: Wallet info synced with user profile
+
+### Wallet API Endpoints
 ```
-Kissan-Sathi/
-├── Frontend/
-│   ├── HTML/
-│   │   ├── index.html           # Landing page
-│   │   ├── login.html           # User authentication
-│   │   ├── register.html        # User registration
-│   │   ├── farmer.html          # Farmer dashboard
-│   │   ├── customer.html        # Customer dashboard
-│   │   ├── marketplace.html     # Product marketplace
-│   │   ├── profile.html         # User profile & stats
-│   │   ├── scan.html           # QR code scanner
-│   │   └── wallet.html         # Wallet connection
-│   ├── js/
-│   │   ├── farmer.js           # Farmer functionality
-│   │   ├── customer.js         # Customer functionality
-│   │   ├── marketplace.js      # Shopping cart & browsing
-│   │   ├── profile.js          # User profile & stats
-│   │   ├── scan.js            # QR scanning
-│   │   ├── wallet.js          # Wallet management
-│   │   ├── login.js           # Authentication
-│   │   ├── register.js        # User registration
-│   │   ├── navbar.js          # Navigation
-│   │   └── utils.js           # Utility functions
-│   ├── css/
-│   │   ├── main.css           # Global styles
-│   │   ├── navbar.css         # Navigation styles
-│   │   ├── profile.css        # Profile page styles
-│   │   ├── marketplace.css    # Marketplace styles
-│   │   └── scan.css          # Scanner styles
-│   ├── server.js              # Frontend server
-│   └── package.json           # Frontend dependencies
-├── Backend/
-│   ├── src/
-│   │   ├── controllers/
-│   │   │   └── user.controller.js
-│   │   ├── models/
-│   │   │   ├── user.models.js
-│   │   │   └── produceItem.models.js
-│   │   ├── routes/
-│   │   │   └── user.routes.js
-│   │   ├── middleware/
-│   │   │   ├── auth.middleware.js
-│   │   │   └── multer.middleware.js
-│   │   ├── utils/
-│   │   │   ├── ApiError.js
-│   │   │   ├── ApiResponse.js
-│   │   │   ├── asyncHandler.js
-│   │   │   └── cloudinary.js
-│   │   ├── database/
-│   │   │   └── index.js
-│   │   ├── constants.js
-│   │   └── index.js
-│   ├── .env                   # Environment variables
-│   └── package.json           # Backend dependencies
-├── contracts.sol              # Smart contract
-├── ether.js                  # Contract interaction class
-├── UPDATE_SUMMARY.md          # Feature documentation
-├── NAVIGATION_GUIDE.md        # User guide
-├── CONTRACT_SETUP.md          # Setup instructions
-└── README.md                  # This file
+POST /api/v1/wallet/connect      # Connect wallet
+POST /api/v1/wallet/disconnect   # Disconnect wallet  
+GET  /api/v1/wallet/info         # Get wallet info
+PATCH /api/v1/wallet/balance     # Update balance
+GET  /api/v1/wallet/all          # Get all wallets (admin)
+GET  /api/v1/wallet/stats        # Get wallet statistics
 ```
 
-## 📋 Prerequisites
+### How to Connect Wallet
+1. **Install MetaMask**: Download from metamask.io
+2. **Create Account**: Set up wallet with seed phrase
+3. **Get Test ETH**: Use faucets for testnet
+4. **Connect**: Click "Connect Wallet" on any page
+5. **Approve**: Approve connection in MetaMask popup
+6. **Verify**: Check connection status in profile page
 
-### Required Software
-- **Node.js** (v16+ recommended)
-- **npm** or **yarn**
-- **MongoDB** (local or Atlas)
-- **MetaMask** browser extension
-- **Git**
+## 🌐 Contract Addresses
 
-### Blockchain Requirements
-- **Ethereum wallet** with test ETH
-- **Smart contract** deployed on testnet/mainnet
-- **Infura** or **Alchemy** RPC endpoint (optional)
+### Current Deployment
+- **Contract**: 0x742d35Cc6135C4Ad4C006C8C704aC8DC7CE18F72
+- **Network**: Sepolia Testnet (Replace with your deployment)
+- **Explorer**: [View on Etherscan](https://sepolia.etherscan.io/address/0x742d35Cc6135C4Ad4C006C8C704aC8DC7CE18F72)
 
-### Accounts Needed
-- **Cloudinary account** (for image storage)
-- **MongoDB Atlas** (for cloud database)
-- **Ethereum testnet faucet** access
+### Network Support
+- ✅ Ethereum Mainnet (1)
+- ✅ Sepolia Testnet (11155111) 
+- ✅ Goerli Testnet (5)
+- ✅ Polygon Mainnet (137)
+- ✅ Mumbai Testnet (80001)
+- ✅ BSC Mainnet (56)
+- ✅ BSC Testnet (97)
 
-## 🚀 Installation
+## 💳 Wallet Connection Guide
 
-### 1. Clone Repository
-```bash
-git clone https://github.com/yourusername/kissan-sathi.git
-cd kissan-sathi
-```
+### For Users
+1. **Homepage**: Click "🦊 Connect Wallet" button
+2. **Wallet Page**: Dedicated wallet management page
+3. **Profile Page**: View wallet info and transaction history
+4. **Any Page**: Wallet status shown in navigation
 
-### 2. Backend Setup
-```bash
-cd Backend
-npm install
-
-# Create .env file
-cp .env.example .env
-```
-
-#### Configure .env file:
-```env
-# Database
-MONGO_DB_URI=mongodb://localhost:27017
-# or MongoDB Atlas: mongodb+srv://username:password@cluster.mongodb.net
-
-# JWT Secrets
-ACCESS_TOKEN_SECRET=your-super-secret-key-32-characters-long
-REFRESH_TOKEN_SECRET=your-refresh-secret-key-32-characters-long
-ACCESS_TOKEN_EXPIRY=1d
-REFRESH_TOKEN_EXPIRY=30d
-
-# Cloudinary
-CLOUDINARY_CLOUD_NAME=your-cloud-name
-CLOUDINARY_API_KEY=your-api-key
-CLOUDINARY_API_SECRET=your-api-secret
-
-# Server
-PORT=8000
-CORS_ORIGIN=http://localhost:3001
-```
-
-#### Start Backend:
-```bash
-npm run dev
-```
-
-### 3. Frontend Setup
-```bash
-cd ../Frontend
-npm install
-
-# Start frontend server
-npm run dev
-# or
-node server.js
-```
-
-### 4. Smart Contract Deployment
-
-#### Using Hardhat:
-```bash
-# Install Hardhat
-npm install --save-dev hardhat
-
-# Initialize Hardhat project
-npx hardhat
-
-# Deploy contract
-npx hardhat run scripts/deploy.js --network sepolia
-```
-
-#### Update Contract Address:
-After deployment, update the contract address in these files:
-- `Frontend/js/farmer.js` (line 16)
-- `Frontend/js/customer.js` (line 8)
-- `Frontend/js/marketplace.js` (line 24)
-- `Frontend/js/profile.js` (line 17)
-
+### For Developers
 ```javascript
-const CONTRACT_ADDRESS = 'YOUR_DEPLOYED_CONTRACT_ADDRESS';
+// Use global wallet service
+const walletInfo = await window.walletService.connectWallet();
+console.log(walletInfo.address, walletInfo.network, walletInfo.balance);
+
+// Get contract instance
+const contract = window.walletService.getContract(CONTRACT_ABI);
+const tx = await contract.registerProduce(...args);
 ```
 
-## 🔧 Smart Contract Setup
-
-### 1. Deploy Contract
-```solidity
-// Use the contract in contracts.sol
-// Deploy to your preferred network (Sepolia recommended for testing)
-```
-
-### 2. Get Test ETH
-- **Sepolia**: https://sepoliafaucet.com/
-- **Goerli**: https://goerlifaucet.com/
-
-### 3. Configure MetaMask
-- Add your chosen network
-- Import account with test ETH
-- Connect to the application
-
-## 🎯 Usage
-
-### Getting Started
-
-#### 1. Start Servers
-```bash
-# Terminal 1 - Backend
-cd Backend
-npm run dev
-
-# Terminal 2 - Frontend  
-cd Frontend
-node server.js
-```
-
-#### 2. Access Application
-- **Frontend**: http://localhost:3001
-- **Backend API**: http://localhost:8000
-
-#### 3. Create Account
-1. Go to http://localhost:3001
-2. Click "Create New Account"
-3. Choose role (Farmer/Customer)
-4. Upload required documents
-5. Complete registration
-
-#### 4. Connect Wallet
-1. Install MetaMask
-2. Go to Profile page
-3. Click "Connect Wallet"
-4. Approve connection
-
-### For Farmers
-
-#### Register Products:
-1. Go to **Farmer Dashboard**
-2. Fill product details:
-   - Name (e.g., "Organic Tomatoes")
-   - Origin Farm (e.g., "Green Valley Farm")
-   - Price in ETH (e.g., 0.001)
-   - QR Code data
-3. Click "Register Produce"
-4. Confirm MetaMask transaction
-
-#### Manage Products:
-- Update prices anytime
-- Change product status
-- View sales statistics
-- Read customer reviews
-
-### For Customers
-
-#### Browse Products:
-1. Go to **Marketplace**
-2. Browse available products
-3. Use search/filter features
-4. Add items to cart
-5. Checkout all items together
-
-#### Verify Products:
-1. Go to **Scan** page
-2. Scan QR code on product
-3. View complete product history
-4. Verify authenticity
-
-#### Track Purchases:
-1. Go to **Profile** page
-2. View purchase history
-3. See spending statistics
-4. Rate and review products
-
-## 🌐 API Endpoints
-
-### Authentication
-```
-POST /api/v1/users/register    # User registration  
-POST /api/v1/users/login       # User login
-POST /api/v1/users/logout      # User logout
-GET  /api/v1/users/current-user # Get current user
-POST /api/v1/users/refresh-token # Refresh access token
-```
-
-### User Management
-```
-PATCH /api/v1/users/update-account    # Update account details
-PATCH /api/v1/users/avatar           # Update profile picture
-PATCH /api/v1/users/id-proof         # Update ID proof
-PATCH /api/v1/users/change-password  # Change password
-```
-
-## 📱 Frontend Pages
-
-### Public Pages
-- **Home** (`/`) - Landing page with features overview
-- **Login** (`/login`) - User authentication
-- **Register** (`/register`) - New user registration
-
-### Protected Pages
-- **Farmer Dashboard** (`/farmer`) - Product registration and management
-- **Customer Dashboard** (`/customer`) - Product search and purchase
-- **Marketplace** (`/marketplace`) - Browse all products with cart
-- **Profile** (`/profile`) - User stats and transaction history
-- **Scanner** (`/scan`) - QR code scanning for verification
-- **Wallet** (`/wallet`) - MetaMask connection management
-
-## 🔍 Key Features Deep Dive
-
-### Shopping Cart System
-- **Persistent Storage**: Cart saved in localStorage
-- **Multi-item Checkout**: Purchase multiple items in one transaction
-- **Real-time Updates**: Instant price calculations
-- **Remove Items**: Individual item removal
-
-### Rating & Review System
-- **Post-Purchase Reviews**: Rate products after buying
-- **5-Star Rating**: Visual star rating system
-- **Written Reviews**: Optional text reviews
-- **Farmer Dashboard**: View all reviews for products
-- **Verified Purchases**: Only buyers can review
-
-### Blockchain Integration
-- **Real-time Data**: Live blockchain data fetching
-- **Gas Optimization**: Efficient smart contract calls
-- **Error Handling**: Comprehensive transaction error handling
-- **Event Listening**: Real-time blockchain event updates
-
-### Statistics Dashboard
-- **Farmer Stats**: Revenue, sales count, product metrics
-- **Customer Stats**: Purchase history, spending analysis
-- **Visual Charts**: Clean data presentation
-- **Real-time Updates**: Live blockchain data sync
-
-## 🤝 Contributing
-
-### Development Setup
-1. Fork the repository
-2. Create feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open Pull Request
-
-### Code Standards
-- **JavaScript**: ES6+ features, async/await
-- **CSS**: BEM methodology, responsive design
-- **Git**: Conventional commits
-- **Testing**: Add tests for new features
-
-### Contribution Areas
-- 🐛 Bug fixes
-- ✨ New features
-- 📝 Documentation improvements
-- 🎨 UI/UX enhancements
-- ⚡ Performance optimizations
-
-## 🐛 Troubleshooting
+## 🔧 Wallet Troubleshooting
 
 ### Common Issues
 
-#### "MetaMask not found"
+#### "Cannot read properties of undefined (reading 'BrowserProvider')"
+```bash
+# Solution: Wait for ethers.js to load completely
+# 1. Refresh the page
+# 2. Wait a few seconds before clicking connect
+# 3. Check browser console for loading errors
+# 4. Ensure stable internet connection
+```
+
+#### "Ethers library failed to load"
+```bash
+# Solution: Check network connection and CDN access
+# 1. Refresh the page
+# 2. Check if https://cdn.ethers.io is accessible
+# 3. Try in incognito/private browsing mode
+# 4. Clear browser cache
+```
+
+#### "MetaMask not detected"
 ```bash
 # Solution: Install MetaMask browser extension
 # Chrome: https://chrome.google.com/webstore/detail/metamask/
-# Firefox: https://addons.mozilla.org/en-US/firefox/addon/ether-metamask/
+# Firefox: https://addons.mozilla.org/firefox/addon/ether-metamask/
 ```
 
-#### "Contract address not found"
+#### "Wrong network"
 ```bash
-# Solution: Update contract addresses in all JS files
-# Check CONTRACT_SETUP.md for detailed instructions
+# Solution: Switch to correct network in MetaMask
+# Settings → Networks → Add Network
+# Or click network name in MetaMask to switch
 ```
 
-#### "Insufficient funds for gas"
+#### "Insufficient funds"
 ```bash
 # Solution: Get testnet ETH from faucets
 # Sepolia: https://sepoliafaucet.com/
-# Goerli: https://goerlifaucet.com/
+# Mumbai: https://faucet.polygon.technology/
 ```
 
-#### "CORS errors"
+#### "Connection rejected"
 ```bash
-# Solution: Check backend CORS settings
-# Ensure frontend URL is in allowed origins list
+# Solution: 
+# 1. Check MetaMask is unlocked
+# 2. Refresh page and try again
+# 3. Reset MetaMask connection in settings
 ```
 
-#### "Authentication failed"
-```bash
-# Solution: Check if backend is running
-# Clear browser cookies and localStorage
-# Re-login with correct credentials
-```
+## 📊 Wallet Statistics Dashboard
 
-### Debug Mode
-Enable debug logs:
-```javascript
-// Add to utils.js
-localStorage.setItem('debug', 'true');
-```
-
-### Network Issues
-Check network configuration:
-1. Verify contract is deployed on current network
-2. Ensure MetaMask is on correct network
-3. Confirm sufficient ETH for gas fees
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **Ethereum Foundation** - For blockchain infrastructure
-- **MetaMask** - For wallet integration
-- **Cloudinary** - For image storage solutions
-- **MongoDB** - For database services
-- **Node.js Community** - For excellent tooling
-
-## 📞 Support
-
-For support and questions:
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/kissan-sathi/issues)
-- **Documentation**: Check our [guides](./NAVIGATION_GUIDE.md)
-- **Setup Help**: See [setup instructions](./CONTRACT_SETUP.md)
+Access wallet analytics at `/api/v1/wallet/stats`:
+- Total connected wallets
+- Active vs inactive wallets  
+- Network distribution
+- Connection history
+- Balance analytics
 
 ---
 
-**Made with ❤️ for transparent agriculture** 🌾
+**Wallet integration complete!** 🦊✨
 
-*Empowering farmers and customers through blockchain technology*
-
-[![Built with](https://img.shields.io/badge/Built%20with-JavaScript-yellow?style=flat-square&logo=javascript)](https://javascript.info/)
-[![Powered by](https://img.shields.io/badge/Powered%20by-Ethereum-blue?style=flat-square&logo=ethereum)](https://ethereum.org/)
-[![Database](https://img.shields.io/badge/Database-MongoDB-green?style=flat-square&logo=mongodb)](https://mongodb.com/)
+*Now users can connect MetaMask on any page and interact with the blockchain seamlessly.*

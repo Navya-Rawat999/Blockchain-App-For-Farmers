@@ -123,6 +123,13 @@
           <span class="info-label">Member Since</span>
           <span class="info-value" id="member-since">-</span>
         </div>
+
+        <!-- Account Actions -->
+        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+          <button onclick="testLogout()" class="btn btn-outline w-100">
+            🚪 Logout
+          </button>
+        </div>
       </div>
 
       <!-- Transaction History -->
@@ -152,5 +159,29 @@
   <script type="module" src="../js/utils.js"></script>
   <script type="module" src="../js/navbar.js"></script>
   <script type="module" src="../js/profile.js"></script>
+  
+  <script>
+    // Test logout function
+    async function testLogout() {
+      try {
+        console.log('Testing logout...');
+        
+        // Try navbar logout first
+        if (window.handleLogout) {
+          await window.handleLogout();
+        } else {
+          // Fallback to utils logout
+          const { default: utils } = await import('../js/utils.js');
+          await utils.logout();
+        }
+      } catch (error) {
+        console.error('Logout test error:', error);
+        alert('Logout error: ' + error.message);
+      }
+    }
+    
+    // Make it globally available
+    window.testLogout = testLogout;
+  </script>
 </body>
 </html>

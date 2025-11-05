@@ -22,10 +22,14 @@ app.use(cookieParser())
 
 // routes import
 import userRouter from './routes/user.routes.js'
+import produceRouter from './routes/produce.routes.js'
+import walletRouter from './routes/wallet.routes.js'
 
 
 // routes declaration
-app.use("/api/v1/users", userRouter) // changed from /user to /api/v1/users as latter is better
+app.use("/api/v1/users", userRouter)
+app.use("/api/v1/produce", produceRouter)
+app.use("/api/v1/wallet", walletRouter) // Add wallet routes
 
 
 export default app

@@ -14,64 +14,100 @@ const CONTRACT_ABI = [
   "event ProduceSold(uint256 indexed id, address indexed buyer, address indexed seller, uint256 pricePaidInWei)"
 ];
 
-const CONTRACT_ADDRESS = '0x...'; // Replace with your deployed contract address
+const CONTRACT_ADDRESS = '0x742d35Cc6135C4Ad4C006C8C704aC8DC7CE18F72';
 
-// Connect wallet
+// Connect wallet directly without wallet service
 async function connectWallet() {
   if (typeof window.ethereum === 'undefined') {
-    utils.showAlert('Please install MetaMask to connect your wallet', 'error');
+    utils.showAlert('MetaMask is not installed. Please install it from metamask.io', 'error');
     return;
   }
 
+  // Wait for ethers to be available
+  if (typeof window.ethers === 'undefined') {
+    utils.showAlert('Loading wallet service...', 'warning');
+    let attempts = 0;
+    while (typeof window.ethers === 'undefined' && attempts < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+    }
+    
+    if (typeof window.ethers === 'undefined') {
+      utils.showAlert('Failed to load wallet service. Please refresh the page.', 'error');
+      return;
+    }
+  }
+
   try {
-    provider = new ethers.BrowserProvider(window.ethereum);
-    await provider.send("eth_requestAccounts", []);
+    // Request account access
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+    
+    // Set up provider and signer
+    provider = new window.ethers.BrowserProvider(window.ethereum);
     signer = await provider.getSigner();
     userAddress = await signer.getAddress();
 
-    // Update display
+    // Update UI elements
     document.getElementById('wallet-address').textContent = userAddress;
-    
-    // Save to localStorage
-    localStorage.setItem('saved_wallet_address', userAddress);
-
-    // Show MetaMask info
-    document.getElementById('metamask-info').style.display = 'block';
-    document.getElementById('connect-wallet-btn').textContent = 'MetaMask Connected';
+    document.getElementById('connect-wallet-btn').textContent = 'Wallet Connected';
     document.getElementById('connect-wallet-btn').disabled = true;
     document.getElementById('disconnect-wallet-btn').style.display = 'inline-block';
-
+    document.getElementById('metamask-info').style.display = 'block';
+    
+    // Save to localStorage for persistence
+    localStorage.setItem('saved_wallet_address', userAddress);
+    
     await loadWalletInfo();
     utils.showAlert('Wallet connected successfully!', 'success');
+    
+    // Load stats and transactions
+    await loadUserStats();
+    await loadTransactions();
   } catch (error) {
     console.error('Wallet connection error:', error);
-    utils.showAlert('Failed to connect wallet. Please try again.', 'error');
+    utils.showAlert('Failed to connect wallet: ' + error.message, 'error');
   }
 }
 
 // Disconnect wallet
-function disconnectWallet() {
-  provider = null;
-  signer = null;
-  
-  // Hide MetaMask info
-  document.getElementById('metamask-info').style.display = 'none';
-  document.getElementById('connect-wallet-btn').textContent = 'Connect MetaMask';
-  document.getElementById('connect-wallet-btn').disabled = false;
-  document.getElementById('disconnect-wallet-btn').style.display = 'none';
-  
-  // Keep the saved address from manual input or set to "Not set"
-  const savedAddress = localStorage.getItem('saved_wallet_address');
-  if (!savedAddress) {
-    document.getElementById('wallet-address').textContent = 'Not set';
+async function disconnectWallet() {
+  try {
+    // Call backend API to disconnect wallet
+    await utils.apiCall('/wallet/disconnect', {
+      method: 'POST'
+    });
+
+    // Reset local state
+    provider = null;
+    signer = null;
+    userAddress = null;
+    
+    // Update UI
+    document.getElementById('connect-wallet-btn').textContent = 'Connect MetaMask';
+    document.getElementById('connect-wallet-btn').disabled = false;
+    document.getElementById('disconnect-wallet-btn').style.display = 'none';
+    document.getElementById('metamask-info').style.display = 'none';
+    
+    // Keep saved address from manual input or clear it
+    const savedAddress = localStorage.getItem('saved_wallet_address');
+    if (!savedAddress) {
+      document.getElementById('wallet-address').textContent = 'Not set';
+    }
+    
+    utils.showAlert('Wallet disconnected successfully!', 'success');
+  } catch (error) {
+    console.error('Wallet disconnection error:', error);
+    // Still update UI even if API call fails
+    provider = null;
+    signer = null;
+    userAddress = null;
+    utils.showAlert('Wallet disconnected', 'success');
   }
-  
-  utils.showAlert('MetaMask disconnected', 'success');
 }
 
 // Load wallet information
 async function loadWalletInfo() {
-  if (!provider || !signer) {
+  if (!provider || !userAddress) {
     return;
   }
 
@@ -82,8 +118,27 @@ async function loadWalletInfo() {
 
     // Get balance
     const balance = await provider.getBalance(userAddress);
-    const balanceInEth = ethers.formatEther(balance);
+    const balanceInEth = window.ethers.formatEther(balance);
     document.getElementById('wallet-balance').textContent = `${parseFloat(balanceInEth).toFixed(4)} ETH`;
+    
+    // Update stats
+    document.getElementById('stat-balance').textContent = `${parseFloat(balanceInEth).toFixed(4)} ETH`;
+
+    // Save wallet info to backend
+    try {
+      await utils.apiCall('/wallet/connect', {
+        method: 'POST',
+        body: JSON.stringify({
+          walletAddress: userAddress,
+          networkId: Number(network.chainId),
+          networkName: network.name || `Chain ID: ${network.chainId}`,
+          balance: balanceInEth
+        })
+      });
+    } catch (backendError) {
+      console.log('Backend wallet save failed:', backendError);
+      // Continue - UI should still work
+    }
   } catch (error) {
     console.error('Error loading wallet info:', error);
   }
@@ -186,16 +241,7 @@ async function loadUserStats() {
   const user = utils.getUser();
   if (!user) return;
 
-  const statsGrid = document.getElementById('stats-grid');
-  
   try {
-    if (!provider) {
-      // Try to connect automatically if MetaMask is installed
-      if (typeof window.ethereum !== 'undefined') {
-        provider = new ethers.BrowserProvider(window.ethereum);
-      }
-    }
-
     let stats = {};
 
     if (user.role === 'farmer') {
@@ -204,33 +250,27 @@ async function loadUserStats() {
       stats = await loadCustomerStats();
     }
 
-    // Display stats
-    let statsHTML = '';
-    for (const [key, value] of Object.entries(stats)) {
-      statsHTML += `
-        <div class="stat-card">
-          <div class="stat-value">${value.value}</div>
-          <div class="stat-label">${value.label}</div>
-        </div>
-      `;
+    // Update stats in UI
+    if (stats.registered) {
+      document.getElementById('stat-products').textContent = stats.registered.value;
+    }
+    if (stats.purchases) {
+      document.getElementById('stat-products').textContent = stats.purchases.value;
     }
 
-    statsGrid.innerHTML = statsHTML || '<p style="color: var(--text-secondary); text-align: center; grid-column: 1/-1;">Connect your wallet to view statistics</p>';
+    // Transaction count will be updated when transactions load
   } catch (error) {
     console.error('Error loading stats:', error);
-    statsGrid.innerHTML = '<p style="color: var(--error); text-align: center; grid-column: 1/-1;">Failed to load statistics</p>';
   }
 }
 
 // Load farmer-specific statistics
 async function loadFarmerStats() {
-  if (!provider) return {};
+  if (!provider || !userAddress) return {};
 
   try {
-    // Connect to contract
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+    const contract = new window.ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
     
-    // Get all produce items and filter by farmer
     const nextId = await contract.nextProduceId();
     const totalItems = Number(nextId) - 1;
     
@@ -238,33 +278,30 @@ async function loadFarmerStats() {
     let sold = 0;
     let totalRevenue = BigInt(0);
 
-    if (signer && userAddress) {
-      for (let i = 1; i <= totalItems; i++) {
-        try {
-          const details = await contract.getProduceDetails(i);
-          const originalFarmer = details[2];
-          
-          if (originalFarmer.toLowerCase() === userAddress.toLowerCase()) {
-            registered++;
-            if (details[4] === 'Sold') {
-              sold++;
-              // Get sale history for this item
-              const history = await contract.getSaleHistory(i);
-              if (history.length > 0) {
-                totalRevenue += BigInt(history[0][3]); // pricePaidInWei
-              }
+    for (let i = 1; i <= totalItems; i++) {
+      try {
+        const details = await contract.getProduceDetails(i);
+        const originalFarmer = details[2];
+        
+        if (originalFarmer.toLowerCase() === userAddress.toLowerCase()) {
+          registered++;
+          if (details[4] === 'Sold') {
+            sold++;
+            const history = await contract.getSaleHistory(i);
+            if (history.length > 0) {
+              totalRevenue += BigInt(history[0][3]);
             }
           }
-        } catch (err) {
-          console.error(`Error loading produce ${i}:`, err);
         }
+      } catch (err) {
+        console.error(`Error loading produce ${i}:`, err);
       }
     }
 
     return {
       registered: { value: registered, label: 'Products Registered' },
       sold: { value: sold, label: 'Products Sold' },
-      revenue: { value: `${ethers.formatEther(totalRevenue)} ETH`, label: 'Total Revenue' },
+      revenue: { value: `${window.ethers.formatEther(totalRevenue)} ETH`, label: 'Total Revenue' },
       available: { value: registered - sold, label: 'Available' }
     };
   } catch (error) {
@@ -275,35 +312,33 @@ async function loadFarmerStats() {
 
 // Load customer-specific statistics
 async function loadCustomerStats() {
-  if (!provider) return {};
+  if (!provider || !userAddress) return {};
 
   try {
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+    const contract = new window.ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
     const nextId = await contract.nextProduceId();
     const totalItems = Number(nextId) - 1;
     
     let purchases = 0;
     let totalSpent = BigInt(0);
 
-    if (signer && userAddress) {
-      for (let i = 1; i <= totalItems; i++) {
-        try {
-          const history = await contract.getSaleHistory(i);
-          for (const sale of history) {
-            if (sale[1].toLowerCase() === userAddress.toLowerCase()) { // buyer address
-              purchases++;
-              totalSpent += BigInt(sale[3]); // pricePaidInWei
-            }
+    for (let i = 1; i <= totalItems; i++) {
+      try {
+        const history = await contract.getSaleHistory(i);
+        for (const sale of history) {
+          if (sale[1].toLowerCase() === userAddress.toLowerCase()) {
+            purchases++;
+            totalSpent += BigInt(sale[3]);
           }
-        } catch (err) {
-          console.error(`Error loading sale history ${i}:`, err);
         }
+      } catch (err) {
+        console.error(`Error loading sale history ${i}:`, err);
       }
     }
 
     return {
       purchases: { value: purchases, label: 'Total Purchases' },
-      spent: { value: `${ethers.formatEther(totalSpent)} ETH`, label: 'Total Spent' },
+      spent: { value: `${window.ethers.formatEther(totalSpent)} ETH`, label: 'Total Spent' },
       available: { value: totalItems, label: 'Products Available' }
     };
   } catch (error) {
@@ -318,14 +353,14 @@ async function loadTransactions() {
   const user = utils.getUser();
 
   if (!provider || !userAddress) {
-    transactionsList.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">Connect your wallet to view transaction history</p>';
+    transactionsList.innerHTML = '<p class="text-secondary text-center">Connect your wallet to view transaction history</p>';
     return;
   }
 
-  transactionsList.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">Loading transactions...</p>';
+  transactionsList.innerHTML = '<p class="text-secondary text-center">Loading transactions...</p>';
 
   try {
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+    const contract = new window.ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
     const nextId = await contract.nextProduceId();
     const totalItems = Number(nextId) - 1;
     
@@ -378,22 +413,25 @@ async function loadTransactions() {
     // Sort by timestamp (newest first)
     transactions.sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
 
+    // Update transaction count in stats
+    document.getElementById('stat-transactions').textContent = transactions.length;
+
     if (transactions.length === 0) {
-      transactionsList.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">No transactions found</p>';
+      transactionsList.innerHTML = '<p class="text-secondary text-center">No transactions found</p>';
       return;
     }
 
     // Display transactions
     const transactionsHTML = transactions.map(tx => {
       const date = new Date(Number(tx.timestamp) * 1000);
-      const priceInEth = ethers.formatEther(tx.price);
+      const priceInEth = window.ethers.formatEther(tx.price);
       
       let typeClass = 'tx-registration';
       let typeLabel = '📝 Registration';
       let details = '';
 
       if (tx.type === 'purchase') {
-        typeClass = 'tx-sale';
+        typeClass = 'tx-purchase';
         typeLabel = '🛒 Purchase';
         details = `Bought from: ${tx.seller.slice(0, 6)}...${tx.seller.slice(-4)}`;
       } else if (tx.type === 'sale') {
@@ -403,12 +441,12 @@ async function loadTransactions() {
       }
 
       return `
-        <div class="transaction-item">
+        <div class="transaction-item" style="padding: 1rem; margin-bottom: 1rem; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 0.5rem;">
           <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
             <div>
-              <span class="tx-type ${typeClass}">${typeLabel}</span>
-              <h4 style="font-size: 1rem; font-weight: 600; margin-top: 0.5rem;">${tx.productName}</h4>
-              <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;">
+              <span class="tx-type ${typeClass}" style="padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 600;">${typeLabel}</span>
+              <h4 style="font-size: 1rem; font-weight: 600; margin: 0.5rem 0 0.25rem 0;">${tx.productName}</h4>
+              <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 0;">
                 ID: ${tx.productId} ${details ? '• ' + details : ''}
               </p>
             </div>
@@ -451,39 +489,53 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load profile data
   loadProfileData();
 
-  // Try to auto-connect wallet if already connected
-  if (typeof window.ethereum !== 'undefined') {
-    try {
-      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-      if (accounts.length > 0) {
-        await connectWallet();
-        await loadUserStats();
-        await loadTransactions();
-      } else {
-        // Show message to connect wallet
-        document.getElementById('stats-grid').innerHTML = '<p style="color: var(--text-secondary); text-align: center; grid-column: 1/-1;">Connect your wallet to view blockchain statistics</p>';
-      }
-    } catch (error) {
-      console.error('Auto-connect error:', error);
+  // Wait for ethers to load before trying to connect wallet
+  let ethersReady = false;
+  try {
+    let attempts = 0;
+    while (typeof window.ethers === 'undefined' && attempts < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
     }
+    ethersReady = typeof window.ethers !== 'undefined';
+  } catch (error) {
+    console.error('Error waiting for ethers:', error);
   }
 
-  // Listen for account changes
-  if (typeof window.ethereum !== 'undefined') {
-    window.ethereum.on('accountsChanged', async (accounts) => {
-      if (accounts.length === 0) {
-        utils.showAlert('Wallet disconnected', 'warning');
-        location.reload();
-      } else {
-        await connectWallet();
-        await loadUserStats();
-        await loadTransactions();
+  if (ethersReady) {
+    // Try to auto-connect wallet if already connected
+    if (typeof window.ethereum !== 'undefined') {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          await connectWallet();
+        } else {
+          // Show message to connect wallet
+          document.getElementById('stat-balance').textContent = 'Connect Wallet';
+        }
+      } catch (error) {
+        console.error('Auto-connect error:', error);
       }
-    });
+    }
 
-    window.ethereum.on('chainChanged', () => {
-      location.reload();
-    });
+    // Listen for account changes
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', async (accounts) => {
+        if (accounts.length === 0) {
+          await disconnectWallet();
+          utils.showAlert('Wallet disconnected', 'warning');
+        } else {
+          await connectWallet();
+          utils.showAlert('Wallet account changed', 'success');
+        }
+      });
+
+      window.ethereum.on('chainChanged', () => {
+        window.location.reload();
+      });
+    }
+  } else {
+    document.getElementById('stat-balance').textContent = 'Ethers not loaded';
   }
 });
 

@@ -12,8 +12,8 @@ async function initNavbar() {
       <a href="farmer.html" class="btn btn-ghost">🧑‍🌾 Farmer</a>
       <a href="customer.html" class="btn btn-ghost">👤 Customer</a>
       <a href="profile.html" class="btn btn-ghost">⚙️ Profile</a>
+      <a href="wallet.html" class="btn btn-ghost">💼 Wallet</a>
       <button id="logout-btn" class="btn btn-outline btn-sm">Logout</button>
-      <a href="wallet.html" class="btn btn-primary">Connect Wallet</a>
     ` : `
       <a href="marketplace.html" class="btn btn-ghost">🛒 Marketplace</a>
       <a href="scan.html" class="btn btn-ghost">📱 Scan</a>
@@ -39,13 +39,56 @@ async function initNavbar() {
   if (navbarContainer) {
     navbarContainer.innerHTML = navbarHTML;
 
-    // Attach logout handler if present
+    // Attach logout handler if present - use more robust event handling
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
-      logoutBtn.addEventListener('click', async () => {
-        await utils.logout();
-      });
+      logoutBtn.addEventListener('click', handleLogout);
+      
+      // Also make it available globally for debugging
+      window.handleLogout = handleLogout;
     }
+  }
+}
+
+// Separate logout function for better error handling
+async function handleLogout() {
+  try {
+    // Show loading state
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+      logoutBtn.disabled = true;
+      logoutBtn.textContent = 'Logging out...';
+    }
+
+    // Disconnect wallet if connected
+    if (window.walletService && window.walletService.isConnected) {
+      try {
+        await window.walletService.disconnectWallet();
+      } catch (walletError) {
+        console.error('Wallet disconnect error:', walletError);
+        // Continue with logout even if wallet disconnect fails
+      }
+    }
+
+    // Call backend logout API
+    await utils.logout();
+    
+  } catch (error) {
+    console.error('Logout error:', error);
+    
+    // Even if API call fails, clear local data and redirect
+    utils.clearAuthToken();
+    utils.clearUser();
+    
+    // Show error but still redirect
+    if (utils.showAlert) {
+      utils.showAlert('Logout completed with errors', 'warning');
+    }
+    
+    // Force redirect after a short delay
+    setTimeout(() => {
+      utils.redirect('login.html');
+    }, 1000);
   }
 }
 
@@ -55,3 +98,7 @@ if (document.readyState === 'loading') {
 } else {
   initNavbar();
 }
+
+// Export for global access
+window.initNavbar = initNavbar;
+window.handleLogout = handleLogout;

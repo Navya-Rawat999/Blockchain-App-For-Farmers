@@ -31,10 +31,23 @@ async function initScanner() {
 // Initialize Web3 connection
 async function initWeb3() {
   if (typeof window.ethereum !== 'undefined') {
+    // Wait for ethers to be available
+    if (typeof window.ethers === 'undefined') {
+      let attempts = 0;
+      while (typeof window.ethers === 'undefined' && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      
+      if (typeof window.ethers === 'undefined') {
+        throw new Error('Ethers library failed to load. Please refresh the page.');
+      }
+    }
+
     try {
-      provider = new ethers.BrowserProvider(window.ethereum);
+      provider = new window.ethers.BrowserProvider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
-      contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+      contract = new window.ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
       return true;
     } catch (error) {
       console.error('Web3 initialization error:', error);

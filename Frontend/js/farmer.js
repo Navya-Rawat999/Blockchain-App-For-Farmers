@@ -15,25 +15,51 @@ const CONTRACT_ABI = [
   "event ProduceRegistered(uint256 indexed id, string name, address indexed farmer, string originFarm)"
 ];
 
-const CONTRACT_ADDRESS = '0x...'; // Replace with your deployed contract address
+const CONTRACT_ADDRESS = '0x742d35Cc6135C4Ad4C006C8C704aC8DC7CE18F72'; // Replace with your deployed contract address
 
-// Initialize Web3 connection
+// Initialize Web3 connection without wallet service dependency
 async function initWeb3() {
-  if (typeof window.ethereum !== 'undefined') {
-    try {
-      provider = new ethers.BrowserProvider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      signer = await provider.getSigner();
-      contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-      return true;
-    } catch (error) {
-      console.error('Web3 initialization error:', error);
-      return false;
-    }
-  } else {
-    utils.showAlert('Please install MetaMask to use blockchain features', 'warning');
-    return false;
+  if (typeof window.ethereum === 'undefined') {
+    throw new Error('MetaMask is not installed. Please install MetaMask to continue.');
   }
+
+  // Wait for ethers to be available
+  if (typeof window.ethers === 'undefined') {
+    let attempts = 0;
+    while (typeof window.ethers === 'undefined' && attempts < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+    }
+    
+    if (typeof window.ethers === 'undefined') {
+      throw new Error('Ethers library failed to load. Please refresh the page.');
+    }
+  }
+
+  try {
+    // Request account access
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+    
+    // Set up provider and signer
+    provider = new window.ethers.BrowserProvider(window.ethereum);
+    signer = await provider.getSigner();
+    
+    // Create contract instance
+    contract = new window.ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+    
+    console.log('Web3 initialized successfully');
+    return true;
+  } catch (error) {
+    console.error('Web3 initialization error:', error);
+    throw error;
+  }
+}
+
+// Get reviews for specific produce (add this missing function)
+function getProduceReviews(produceId) {
+  const saved = localStorage.getItem('produce_reviews');
+  const allReviews = saved ? JSON.parse(saved) : [];
+  return allReviews.filter(review => review.produceId === produceId);
 }
 
 // Register produce form handler
@@ -68,30 +94,72 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       // Initialize Web3 if not already done
       if (!contract) {
-        const initialized = await initWeb3();
-        if (!initialized) {
-          throw new Error('Please connect your wallet first');
-        }
+        await initWeb3();
       }
 
       // Convert ETH to Wei for the smart contract
-      const priceInWei = ethers.parseEther(priceInEth);
+      const priceInWei = window.ethers.parseEther(priceInEth);
 
-      // Call smart contract with Wei price
+      // Step 1: Register on blockchain
+      utils.showAlert('Registering on blockchain...', 'warning');
       const tx = await contract.registerProduce(name, originFarm, priceInWei, qrCode);
-      utils.showAlert('Transaction submitted. Waiting for confirmation...', 'warning');
       
+      utils.showAlert('Transaction submitted. Waiting for confirmation...', 'warning');
       const receipt = await tx.wait();
+
+      // Extract produce ID from transaction events
+      const event = receipt.logs.find(log => {
+        try {
+          const parsed = contract.interface.parseLog(log);
+          return parsed.name === 'ProduceRegistered';
+        } catch (e) {
+          return false;
+        }
+      });
+
+      const blockchainId = event ? event.args.id.toString() : null;
+      
+      if (!blockchainId) {
+        throw new Error('Failed to get produce ID from blockchain');
+      }
+
+      // Step 2: Save to database (optional - comment out if no backend)
+      try {
+        utils.showAlert('Saving to database...', 'warning');
+        await utils.apiCall('/produce/register', {
+          method: 'POST',
+          body: JSON.stringify({
+            name,
+            originFarm,
+            priceInWei: priceInWei.toString(),
+            qrCode,
+            blockchainId: parseInt(blockchainId),
+            transactionHash: receipt.hash
+          }),
+        });
+      } catch (dbError) {
+        console.log('Database save failed, but blockchain registration succeeded:', dbError);
+        // Continue - blockchain registration is more important
+      }
+
       utils.showAlert('Produce registered successfully!', 'success');
       
       // Reset form
       form.reset();
       
       // Reload produce list
-      loadProduceList();
+      await loadProduceList();
     } catch (error) {
       console.error('Registration error:', error);
-      utils.showAlert(error.message || 'Registration failed. Please try again.', 'error');
+      
+      let errorMessage = error.message || 'Registration failed. Please try again.';
+      if (error.message.includes('MetaMask')) {
+        errorMessage = 'Please install MetaMask and connect your wallet.';
+      } else if (error.message.includes('rejected')) {
+        errorMessage = 'Transaction was rejected. Please try again.';
+      }
+      
+      utils.showAlert(errorMessage, 'error');
     } finally {
       registerBtn.disabled = false;
       registerBtn.textContent = 'Register Produce';
@@ -99,15 +167,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Load produce list on page load
-  loadProduceList();
+  await loadProduceList();
 });
-
-// Get reviews for specific produce
-function getProduceReviews(produceId) {
-  const saved = localStorage.getItem('produce_reviews');
-  const allReviews = saved ? JSON.parse(saved) : [];
-  return allReviews.filter(review => review.produceId === produceId);
-}
 
 // Load and display farmer's produce
 async function loadProduceList() {
@@ -117,11 +178,7 @@ async function loadProduceList() {
   try {
     // Initialize Web3 if not already done
     if (!contract) {
-      const initialized = await initWeb3();
-      if (!initialized) {
-        produceListContainer.innerHTML = '<p style="color: var(--warning);">Please connect your wallet to view your produce.</p>';
-        return;
-      }
+      await initWeb3();
     }
 
     // Get current user's address
@@ -167,7 +224,7 @@ async function loadProduceList() {
 
     // Display produce items with reviews
     const produceHTML = myProduce.map(item => {
-      const priceInEth = ethers.formatEther(item.priceInWei);
+      const priceInEth = window.ethers.formatEther(item.priceInWei);
       const date = new Date(Number(item.registrationTimestamp) * 1000);
       const statusColor = item.currentStatus === 'Sold' ? 'var(--error)' : 'var(--success)';
       
@@ -233,7 +290,17 @@ async function loadProduceList() {
     produceListContainer.innerHTML = produceHTML;
   } catch (error) {
     console.error('Error loading produce:', error);
-    produceListContainer.innerHTML = '<p style="color: var(--error);">Failed to load produce list. Please refresh the page.</p>';
+    
+    let errorMessage = 'Failed to load produce list. ';
+    if (error.message.includes('MetaMask')) {
+      errorMessage += 'Please connect your MetaMask wallet.';
+    } else if (error.message.includes('network')) {
+      errorMessage += 'Please check your network connection and contract address.';
+    } else {
+      errorMessage += 'Please refresh the page and try again.';
+    }
+    
+    produceListContainer.innerHTML = `<p style="color: var(--error);">${errorMessage}</p>`;
   }
 }
 
@@ -246,12 +313,16 @@ async function updatePrice(produceId, produceName) {
   }
 
   try {
-    const newPriceWei = ethers.parseEther(newPriceEth);
+    if (!contract) {
+      await initWeb3();
+    }
+
+    const newPriceWei = window.ethers.parseEther(newPriceEth);
     const tx = await contract.updateProducePrice(produceId, newPriceWei);
     utils.showAlert('Updating price...', 'warning');
     await tx.wait();
     utils.showAlert('Price updated successfully!', 'success');
-    loadProduceList();
+    await loadProduceList();
   } catch (error) {
     console.error('Price update error:', error);
     utils.showAlert(error.message || 'Failed to update price', 'error');
@@ -267,11 +338,15 @@ async function updateStatus(produceId, produceName) {
   }
 
   try {
+    if (!contract) {
+      await initWeb3();
+    }
+
     const tx = await contract.updateProduceStatus(produceId, newStatus.trim());
     utils.showAlert('Updating status...', 'warning');
     await tx.wait();
     utils.showAlert('Status updated successfully!', 'success');
-    loadProduceList();
+    await loadProduceList();
   } catch (error) {
     console.error('Status update error:', error);
     utils.showAlert(error.message || 'Failed to update status', 'error');

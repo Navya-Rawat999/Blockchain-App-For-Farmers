@@ -154,14 +154,44 @@ const utils = {
   // Logout
   async logout() {
     try {
+      console.log('Starting logout process...');
+      
       // Call backend logout which will clear cookies server-side
       await this.apiCall('/users/logout', { method: 'POST' });
+      
+      console.log('Backend logout successful');
     } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
+      console.error('Backend logout error:', error);
+      // Don't throw here - we still want to clear local data
+    }
+    
+    // Always clear local data regardless of API success
+    try {
       this.clearAuthToken();
       this.clearUser();
-      this.redirect('login.html');
+      
+      // Clear any other stored data
+      localStorage.removeItem('kissan_cart');
+      localStorage.removeItem('produce_reviews');
+      localStorage.removeItem('saved_wallet_address');
+      
+      console.log('Local data cleared');
+      
+      // Show success message
+      if (this.showAlert) {
+        this.showAlert('Logged out successfully', 'success');
+      }
+      
+      // Redirect to login page
+      setTimeout(() => {
+        this.redirect('login.html');
+      }, 500);
+      
+    } catch (localError) {
+      console.error('Error clearing local data:', localError);
+      
+      // Force redirect even if local clearing fails
+      window.location.href = 'login.html';
     }
   },
 };
