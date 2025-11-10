@@ -256,6 +256,90 @@ const getMarketplaceStats = asyncHandler(async (req, res) => {
   );
 });
 
+// Get featured produce for homepage
+const getFeaturedProduce = asyncHandler(async (req, res) => {
+  const featuredItems = await ProduceItem.find({ 
+    isAvailable: true, 
+    currentStatus: { $ne: 'Sold' } 
+  })
+    .sort({ createdAt: -1 })
+    .limit(6)
+    .select('-__v');
+
+  return res.status(200).json(
+    new ApiResponse(200, featuredItems, "Featured produce retrieved successfully")
+  );
+});
+
+// Increment product view count
+const incrementProductView = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const produceItem = await ProduceItem.findOne({ 
+    $or: [
+      { _id: id },
+      { blockchainId: id },
+      { id: parseInt(id) || 0 }
+    ]
+  });
+
+  if (produceItem) {
+    produceItem.views = (produceItem.views || 0) + 1;
+    await produceItem.save();
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200, { views: produceItem?.views || 0 }, "View count updated")
+  );
+});
+
+// Get search suggestions
+const getSearchSuggestions = asyncHandler(async (req, res) => {
+  const { q } = req.query;
+
+  if (!q || q.length < 2) {
+    return res.status(200).json(
+      new ApiResponse(200, [], "Search suggestions retrieved")
+    );
+  }
+
+  const suggestions = await ProduceItem.aggregate([
+    {
+      $match: {
+        $or: [
+          { name: { $regex: q, $options: 'i' } },
+          { originFarm: { $regex: q, $options: 'i' } },
+          { originalFarmer: { $regex: q, $options: 'i' } }
+        ]
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        names: { $addToSet: "$name" },
+        farms: { $addToSet: "$originFarm" },
+        farmers: { $addToSet: "$originalFarmer" }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        suggestions: { 
+          $concatArrays: [
+            { $slice: ["$names", 5] },
+            { $slice: ["$farms", 5] },
+            { $slice: ["$farmers", 5] }
+          ]
+        }
+      }
+    }
+  ]);
+
+  return res.status(200).json(
+    new ApiResponse(200, suggestions[0]?.suggestions || [], "Search suggestions retrieved")
+  );
+});
+
 // Mark produce as sold and update database (called by transaction controller)
 const markProduceAsSold = asyncHandler(async (produceId, buyerAddress, saleTransactionHash) => {
   const produceItem = await ProduceItem.findOne({ 
@@ -304,6 +388,9 @@ export {
   updateProduceStatus,
   updateProducePrice,
   getMarketplaceStats,
+  getFeaturedProduce,
+  incrementProductView,
+  getSearchSuggestions,
   markProduceAsSold,
   removeSoldProduce
 };

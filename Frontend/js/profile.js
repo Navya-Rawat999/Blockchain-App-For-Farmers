@@ -1,6 +1,9 @@
 import utils from '../js/utils.js';
-import centralizedWallet, { CONTRACT_ABI } from '../js/wallet.js';
+import { CentralizedWallet, CONTRACT_ABI } from '../js/wallet.js';
 import { ethers } from 'ethers';
+
+// Create wallet instance
+const centralizedWallet = new CentralizedWallet();
 
 // Profile page functionality using centralized wallet
 // CONTRACT_ABI is now imported from wallet.js which gets it from environment
@@ -260,7 +263,7 @@ async function loadFarmerStats() {
       }
     }
 
-    const revenueInEth = totalRevenue > 0 ? window.ethers.formatEther(totalRevenue) : '0';
+    const revenueInEth = totalRevenue > 0 ? ethers.formatEther(totalRevenue) : '0';
 
     return {
       registered: { value: registered, label: 'Products Registered' },
@@ -305,7 +308,7 @@ async function loadCustomerStats() {
 
     return {
       purchases: { value: purchases, label: 'Total Purchases' },
-      spent: { value: `${window.ethers.formatEther(totalSpent)} ETH`, label: 'Total Spent' },
+      spent: { value: `${ethers.formatEther(totalSpent)} ETH`, label: 'Total Spent' },
       available: { value: totalItems, label: 'Products Available' }
     };
   } catch (error) {

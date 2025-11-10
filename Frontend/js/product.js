@@ -1,6 +1,9 @@
 import utils from './utils.js';
-import centralizedWallet, { CONTRACT_ABI } from './wallet.js';
+import { CentralizedWallet, CONTRACT_ABI } from './wallet.js';
 import { ethers } from 'ethers';
+
+// Create wallet instance
+const centralizedWallet = new CentralizedWallet();
 
 // Product page state
 let currentProduct = null;

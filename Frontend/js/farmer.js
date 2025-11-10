@@ -1,6 +1,9 @@
 import utils from '../js/utils.js';
-import centralizedWallet, { CONTRACT_ABI } from '../js/wallet.js';
+import { CentralizedWallet, CONTRACT_ABI } from '../js/wallet.js';
 import { ethers } from 'ethers';
+
+// Create wallet instance
+const centralizedWallet = new CentralizedWallet();
 
 // Farmer Dashboard - Web3 interactions using centralized wallet
 
