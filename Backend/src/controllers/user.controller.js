@@ -6,6 +6,7 @@ import { ApiResponse } from '../utils/ApiResponse.js'
 import { ApiError } from '../utils/ApiError.js'
 import mongoose from "mongoose"
 import jwt from "jsonwebtoken"
+import { TransactionHistory } from "../models/transactionHistory.models.js"
 
 
 const generateRefreshAndAccessTokens = async(userId) => {
@@ -234,10 +235,109 @@ const changeCurrentPassword = asyncHandler(async(req, res) => {
 })
 
 
+// Enhanced getCurrentUser with transaction info only (no wallet tracking)
 const getCurrentUser = asyncHandler(async(req, res) => {
+  const userId = req.user._id;
+
+  // Get user info
+  const user = req.user;
+
+  // Get basic transaction stats
+  let transactionStats = [];
+  let totalTransactions = 0;
+
+  try {
+    transactionStats = await TransactionHistory.aggregate([
+      { $match: { userId } },
+      {
+        $group: {
+          _id: '$transactionType',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    totalTransactions = await TransactionHistory.countDocuments({ userId });
+  } catch (error) {
+    console.log('Transaction stats not available:', error.message);
+  }
+
+  const enhancedUser = {
+    ...user.toObject(),
+    transactionStats: {
+      total: totalTransactions,
+      byType: transactionStats.reduce((acc, stat) => {
+        acc[stat._id] = stat.count;
+        return acc;
+      }, {})
+    }
+  };
+
   return res
   .status(200)
-  .json(new ApiResponse(200, req.user, "current user fetched successfully"))
+  .json(new ApiResponse(200, enhancedUser, "current user fetched successfully"))
+})
+
+// Get user profile with detailed transaction stats
+const getUserProfile = asyncHandler(async(req, res) => {
+  const userId = req.user._id;
+
+  // Get user info
+  const user = req.user;
+
+  let transactionStats = [];
+  let recentTransactions = [];
+
+  try {
+    // Get detailed transaction stats
+    [transactionStats, recentTransactions] = await Promise.all([
+      TransactionHistory.aggregate([
+        { $match: { userId } },
+        {
+          $group: {
+            _id: '$transactionType',
+            count: { $sum: 1 },
+            totalAmount: {
+              $sum: {
+                $cond: [
+                  { $in: ['$transactionType', ['sale', 'registration']] },
+                  { $toDouble: '$amountInWei' },
+                  0
+                ]
+              }
+            }
+          }
+        }
+      ]),
+      TransactionHistory.find({ userId })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select('transactionType productName amountInWei createdAt blockchainTransactionHash')
+    ]);
+  } catch (error) {
+    console.log('Transaction data not available:', error.message);
+  }
+
+  const profile = {
+    user: user.toObject(),
+    stats: {
+      transactions: {
+        total: recentTransactions.length,
+        byType: transactionStats.reduce((acc, stat) => {
+          acc[stat._id] = {
+            count: stat.count,
+            totalAmount: stat.totalAmount.toString()
+          };
+          return acc;
+        }, {}),
+        recent: recentTransactions
+      }
+    }
+  };
+
+  return res
+  .status(200)
+  .json(new ApiResponse(200, profile, "User profile retrieved successfully"))
 })
 
 const updateAccountDetails = asyncHandler(async(req, res) => {
@@ -339,4 +439,5 @@ export {
   updateAccountDetails,
   updateUserprofilePic,
   updateUserValidIDProof,
-}
+  getUserProfile
+};

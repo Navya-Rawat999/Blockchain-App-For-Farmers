@@ -50,7 +50,7 @@ const getAllProduce = asyncHandler(async (req, res) => {
     page = 1, 
     limit = 12, 
     search = '', 
-    status = 'all',
+    status = 'available', // Default to available only
     sortBy = 'createdAt',
     sortOrder = 'desc'
   } = req.query;
@@ -71,6 +71,8 @@ const getAllProduce = asyncHandler(async (req, res) => {
     query.currentStatus = { $ne: 'Sold' };
   } else if (status === 'sold') {
     query.currentStatus = 'Sold';
+  } else if (status === 'all') {
+    // Show all items regardless of status
   }
 
   // Build sort object
@@ -254,6 +256,46 @@ const getMarketplaceStats = asyncHandler(async (req, res) => {
   );
 });
 
+// Mark produce as sold and update database (called by transaction controller)
+const markProduceAsSold = asyncHandler(async (produceId, buyerAddress, saleTransactionHash) => {
+  const produceItem = await ProduceItem.findOne({ 
+    $or: [
+      { blockchainId: produceId },
+      { id: parseInt(produceId) || 0 }
+    ]
+  });
+
+  if (!produceItem) {
+    throw new ApiError(404, "Produce item not found");
+  }
+
+  // Update the produce status to sold
+  produceItem.currentStatus = 'Sold';
+  produceItem.isAvailable = false;
+  produceItem.soldAt = new Date();
+  produceItem.lastBuyer = buyerAddress;
+  produceItem.saleTransactionHash = saleTransactionHash;
+
+  await produceItem.save();
+  return produceItem;
+});
+
+// Alternative: Remove sold produce entirely (if you want to delete the document)
+const removeSoldProduce = asyncHandler(async (produceId) => {
+  const produceItem = await ProduceItem.findOneAndDelete({ 
+    $or: [
+      { blockchainId: produceId },
+      { id: parseInt(produceId) || 0 }
+    ]
+  });
+
+  if (!produceItem) {
+    throw new ApiError(404, "Produce item not found");
+  }
+
+  return produceItem;
+});
+
 export {
   registerProduce,
   getAllProduce,
@@ -261,5 +303,7 @@ export {
   getProduceById,
   updateProduceStatus,
   updateProducePrice,
-  getMarketplaceStats
+  getMarketplaceStats,
+  markProduceAsSold,
+  removeSoldProduce
 };

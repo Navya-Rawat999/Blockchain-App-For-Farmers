@@ -17,14 +17,24 @@
       <h1 class="section-title">🛒 Marketplace</h1>
       <p class="text-secondary mb-2">Browse and purchase fresh produce directly from farmers</p>
 
-      <!-- Search Bar -->
-      <div class="search-bar">
-        <input type="text" id="search-input" class="search-input" placeholder="Search produce...">
-        <button class="search-btn" onclick="searchProducts()">🔍 Search</button>
+      <!-- Search and Filters -->
+      <div class="search-section mb-2">
+        <div class="search-bar">
+          <input 
+            type="text" 
+            id="search-input" 
+            class="search-input" 
+            placeholder="Search products, farms, or farmers..."
+          >
+          <button class="search-btn" onclick="searchProducts()">
+            🔍 Search
+          </button>
+        </div>
       </div>
 
       <!-- Products Grid -->
-      <div class="product-grid" id="products-grid">
+      <div class="products-section">
+        <div class="product-grid" id="products-grid">
           <p class="text-secondary text-center" style="grid-column: 1/-1;">
             Loading products...
           </p>
@@ -43,12 +53,10 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2 class="modal-title">🛒 Your Cart</h2>
-        <button onclick="closeCart()" class="close-btn">
-          ×
-        </button>
+        <button onclick="closeCart()" class="close-btn">×</button>
       </div>
 
-      <div id="cart-items">
+      <div id="cart-items" class="modal-body">
         <p class="text-secondary text-center">Your cart is empty</p>
       </div>
 
@@ -58,10 +66,10 @@
           <span id="cart-total">0 ETH</span>
         </div>
         <button id="checkout-btn" class="btn btn-primary w-100" onclick="checkout()">
-          Checkout
+          💳 Proceed to Checkout
         </button>
         <button onclick="clearCart()" class="btn btn-outline w-100 mt-0-5rem">
-          Clear Cart
+          🗑️ Clear Cart
         </button>
       </div>
     </div>

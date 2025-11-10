@@ -36,6 +36,11 @@ app.get('/:page', (req, res) => {
   }
 });
 
+// Handle product page with query parameters
+app.get('/product/:id?', (req, res) => {
+  res.sendFile(path.join(__dirname, 'HTML', 'product.html'));
+});
+
 app.listen(PORT, () => {
   console.log(`🌾 Frontend server running on http://localhost:${PORT}`);
   console.log(`📁 Serving files from: ${__dirname}`);

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Details - Kissan Sathi</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/navbar.css">
+  <link rel="stylesheet" href="../css/product.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav id="navbar"></nav>
+
+  <main class="main-content">
+    <div class="product-container">
+      <div id="loading-state" class="loading-content">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Loading product details...</p>
+      </div>
+
+      <div id="error-state" class="error-state" style="display: none;">
+        <div class="error-icon">⚠️</div>
+        <h2 style="color: var(--error); margin-bottom: 1rem;">Product Not Found</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 2rem;">The product you're looking for doesn't exist or has been removed.</p>
+        <a href="marketplace.html" class="btn btn-primary">← Back to Marketplace</a>
+      </div>
+
+      <div id="product-content" style="display: none;">
+        <div class="product-grid">
+          <!-- Product Image Section -->
+          <div class="product-image-section">
+            <div id="product-image" class="product-image">
+              🌾
+            </div>
+            
+            <!-- QR Code Section -->
+            <div class="card mt-2">
+              <h3 style="font-size: 1rem; margin-bottom: 1rem;">🔍 QR Code</h3>
+              <div id="qr-code-display" class="qr-code-display">
+                Loading...
+              </div>
+            </div>
+          </div>
+
+          <!-- Product Information Section -->
+          <div class="product-info">
+            <div>
+              <h1 id="product-name" style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">Loading...</h1>
+              <div id="product-status" style="margin-bottom: 1rem;">
+                <span class="status-badge status-available">Available</span>
+              </div>
+            </div>
+
+            <!-- Price Section -->
+            <div class="price-section">
+              <div class="price-display">
+                <div>
+                  <div class="price-label">Price</div>
+                  <div id="product-price" class="price-main">0.00 ETH</div>
+                </div>
+                <div style="text-align: right;">
+                  <div class="price-label">USD Estimate</div>
+                  <div id="price-usd" class="price-usd">$0.00</div>
+                </div>
+              </div>
+              
+              <button id="buy-button" class="btn btn-primary buy-button w-100" onclick="initiateTransaction()">
+                🛒 Buy Now
+              </button>
+            </div>
+
+            <!-- Product Details -->
+            <div class="card">
+              <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">📋 Product Details</h3>
+              <div id="product-details" class="product-details-grid">
+                <!-- Details will be populated here -->
+              </div>
+            </div>
+
+            <!-- Farmer Information -->
+            <div class="card">
+              <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">🧑‍🌾 Farmer Information</h3>
+              <div id="farmer-info" class="product-details-grid">
+                <!-- Farmer info will be populated here -->
+              </div>
+            </div>
+
+            <!-- Reviews Section -->
+            <div id="reviews-section" class="card">
+              <h3 style="font-size: 1.25rem; margin-bottom: 1rem;">⭐ Customer Reviews</h3>
+              <div id="reviews-content" class="reviews-section">
+                <p style="color: var(--text-secondary); text-align: center;">No reviews yet</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Transaction Confirmation Modal -->
+  <div id="transaction-modal" class="transaction-modal" style="display: none;">
+    <div class="transaction-content">
+      <div id="transaction-step-1" class="transaction-step">
+        <h2 style="margin-bottom: 1rem;">🔒 Confirm Purchase</h2>
+        <div style="margin-bottom: 1.5rem;">
+          <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">You are about to purchase:</div>
+          <div id="confirm-product-name" style="font-weight: 600; margin-bottom: 0.5rem;">Product Name</div>
+          <div id="confirm-product-price" style="font-size: 1.25rem; color: var(--primary-color); font-weight: 700;">0.00 ETH</div>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+          <button onclick="cancelTransaction()" class="btn btn-outline" style="flex: 1;">Cancel</button>
+          <button onclick="confirmTransaction()" class="btn btn-primary" style="flex: 1;">Confirm</button>
+        </div>
+      </div>
+
+      <div id="transaction-step-2" class="transaction-step" style="display: none;">
+        <div class="loading-spinner"></div>
+        <h2 style="margin-bottom: 1rem;">🔄 Processing Transaction</h2>
+        <p id="transaction-status" style="color: var(--text-secondary); margin-bottom: 1rem;">
+          Waiting for MetaMask confirmation...
+        </p>
+        <div style="padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 0.5rem; font-size: 0.875rem;">
+          <strong>Please:</strong>
+          <ul style="text-align: left; margin-top: 0.5rem;">
+            <li>Check your MetaMask wallet</li>
+            <li>Review the transaction details</li>
+            <li>Confirm the transaction</li>
+          </ul>
+        </div>
+      </div>
+
+      <div id="transaction-step-3" class="transaction-step" style="display: none;">
+        <div class="success-icon">✅</div>
+        <h2 style="margin-bottom: 1rem; color: var(--success);">Purchase Successful!</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+          Your transaction has been confirmed on the blockchain.
+        </p>
+        <div id="transaction-hash" class="transaction-hash">
+          <!-- Transaction hash will be shown here -->
+        </div>
+        <div style="display: flex; gap: 1rem;">
+          <button onclick="closeTransactionModal()" class="btn btn-outline" style="flex: 1;">Close</button>
+          <button onclick="rateProduct()" class="btn btn-primary" style="flex: 1;">Rate Product</button>
+        </div>
+      </div>
+
+      <div id="transaction-error" class="transaction-step" style="display: none;">
+        <div class="error-icon">❌</div>
+        <h2 style="margin-bottom: 1rem; color: var(--error);">Transaction Failed</h2>
+        <p id="error-message" style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+          An error occurred during the transaction.
+        </p>
+        <div style="display: flex; gap: 1rem;">
+          <button onclick="closeTransactionModal()" class="btn btn-outline" style="flex: 1;">Close</button>
+          <button onclick="retryTransaction()" class="btn btn-primary" style="flex: 1;">Try Again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; 2025 Kissan Sathi. Built for transparent agriculture.</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script type="module" src="../js/utils.js"></script>
+  <script type="module" src="../js/navbar.js"></script>
+  <script type="module" src="../js/product.js"></script>
+</body>
+</html>

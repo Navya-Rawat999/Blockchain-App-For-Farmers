@@ -30,7 +30,7 @@ async function updatePrice(produceId, produceName) {
       throw new Error('Unable to connect to smart contract');
     }
 
-    const newPriceWei = window.ethers.parseEther(newPriceEth);
+    const newPriceWei = ethers.parseEther(newPriceEth);
     const tx = await contract.updateProducePrice(produceId, newPriceWei);
     utils.showAlert('Updating price...', 'warning');
     await tx.wait();
@@ -229,7 +229,7 @@ async function loadProduceList() {
     }
 
     const produceHTML = myProduce.map(item => {
-      const priceInEth = window.ethers.formatEther(item.priceInWei);
+      const priceInEth = ethers.formatEther(item.priceInWei);
       const date = new Date(Number(item.registrationTimestamp) * 1000);
       const statusColor = item.currentStatus === 'Sold' ? 'var(--error)' : 'var(--success)';
       

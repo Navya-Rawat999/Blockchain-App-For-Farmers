@@ -112,20 +112,15 @@ class CentralizedWallet {
       this.networkId = Number(network.chainId);
       this.networkName = this.getNetworkName(this.networkId);
       
-      const balance = await this.provider.getBalance(this.userAddress);
-      const balanceInEth = ethers.formatEther(balance);
-      
       this.isConnected = true;
 
-      await this.saveWalletToBackend(balanceInEth);
       this.updateWalletUI();
 
       console.log('Wallet connected successfully:', this.userAddress);
 
       return {
         address: this.userAddress,
-        network: this.networkName,
-        balance: balanceInEth
+        network: this.networkName
       };
     } catch (error) {
       console.error('Wallet connection error:', error);
@@ -135,10 +130,6 @@ class CentralizedWallet {
 
   async disconnectWallet() {
     try {
-      await utils.apiCall('/wallet/disconnect', {
-        method: 'POST'
-      });
-
       this.provider = null;
       this.signer = null;
       this.userAddress = null;
@@ -155,38 +146,15 @@ class CentralizedWallet {
     }
   }
 
-  async saveWalletToBackend(balance) {
+  // Helper method to record transactions
+  async recordTransaction(transactionData) {
     try {
-      await utils.apiCall('/wallet/connect', {
+      await utils.apiCall('/api/v1/transactions/record', {
         method: 'POST',
-        body: JSON.stringify({
-          walletAddress: this.userAddress,
-          networkId: this.networkId,
-          networkName: this.networkName,
-          balance: balance
-        })
+        body: JSON.stringify(transactionData)
       });
     } catch (error) {
-      console.error('Error saving wallet to backend:', error);
-    }
-  }
-
-  async updateBalance() {
-    if (!this.provider || !this.userAddress) return null;
-
-    try {
-      const balance = await this.provider.getBalance(this.userAddress);
-      const balanceInEth = ethers.formatEther(balance);
-
-      await utils.apiCall('/wallet/balance', {
-        method: 'PATCH',
-        body: JSON.stringify({ balance: balanceInEth })
-      });
-
-      return balanceInEth;
-    } catch (error) {
-      console.error('Error updating balance:', error);
-      return null;
+      console.error('Error recording transaction:', error);
     }
   }
 
@@ -366,23 +334,6 @@ window.copyAddress = () => {
   centralizedWallet.copyAddress();
 };
 
-window.updateBalance = async () => {
-  try {
-    const balance = await centralizedWallet.updateBalance();
-    if (balance !== null && typeof utils !== 'undefined' && utils.showAlert) {
-      utils.showAlert('Balance updated!', 'success');
-    }
-    return balance;
-  } catch (error) {
-    if (typeof utils !== 'undefined' && utils.showAlert) {
-      utils.showAlert('Failed to update balance', 'error');
-    }
-    throw error;
-  }
-};
-
 // Export the ABI for use in other modules
 export { CONTRACT_ABI };
-
-export default centralizedWallet;
 export { CentralizedWallet };

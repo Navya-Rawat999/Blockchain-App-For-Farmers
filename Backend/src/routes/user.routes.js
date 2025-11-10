@@ -9,6 +9,7 @@ import {
   updateAccountDetails,
   updateUserprofilePic,
   updateUserValidIDProof,
+  getUserProfile
 } from '../controllers/user.controller.js'
 import { upload } from '../middleware/multer.middleware.js'
 import { verifyJWT } from'../middleware/auth.middleware.js'
@@ -17,6 +18,7 @@ import { verifyJWT } from'../middleware/auth.middleware.js'
 
 const router = Router()
 
+// Public routes
 router.route("/register").post(
   upload.fields([ 
     {
@@ -31,21 +33,18 @@ router.route("/register").post(
   registerUser
 )
 
-
-//login route and logout route
 router.route("/login").post(loginUser)
 
-//secured routes
-router.route("/logout").post(verifyJWT, logoutUser)
 router.route("/refresh-token").post(refreshAccessToken)
+
+// Protected routes
+router.route("/logout").post(verifyJWT, logoutUser)
 router.route("/change-password").post(verifyJWT, changeCurrentPassword)
 router.route("/current-user").get(verifyJWT, getCurrentUser)
+router.route("/profile").get(verifyJWT, getUserProfile)
 router.route("/update-account").patch(verifyJWT, updateAccountDetails)
-
-router.route("/avatar").patch(verifyJWT, upload.single("avatar"), updateUserprofilePic)
-
-// upload or update ID proof after login
-router.route("/id-proof").patch(verifyJWT, upload.single("id_proof"), updateUserValidIDProof)
+router.route("/update-profile-pic").patch(verifyJWT, upload.single("profilePic"), updateUserprofilePic)
+router.route("/update-id-proof").patch(verifyJWT, upload.single("valid_id_proof"), updateUserValidIDProof)
 
 
 export default router

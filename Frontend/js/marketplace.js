@@ -4,201 +4,21 @@ import { ethers } from 'ethers';
 
 // Marketplace - Browse and purchase produce
 let allProducts = [];
+let currentPage = 1;
+let totalPages = 1;
 let cart = [];
 
-// Use CONTRACT_ABI from environment via wallet module
-// CONTRACT_ABI is now imported from wallet.js which gets it from environment
-
-// Initialize Web3 connection using centralized wallet
-async function initWeb3() {
-  await centralizedWallet.waitForReady();
-  
-  if (!centralizedWallet.isWalletConnected()) {
-    await centralizedWallet.connectWallet();
-  }
-  
-  return centralizedWallet.isWalletConnected();
-}
-
-// Load cart from localStorage
-function loadCart() {
-  const savedCart = localStorage.getItem('kissan_cart');
-  if (savedCart) {
-    cart = JSON.parse(savedCart);
-    updateCartBadge();
-  }
-}
-
-// Save cart to localStorage
-function saveCart() {
-  localStorage.setItem('kissan_cart', JSON.stringify(cart));
-  updateCartBadge();
-  updateCartModal();
-}
-
-// Update cart badge count
-function updateCartBadge() {
-  const badge = document.getElementById('cart-count');
-  if (cart.length > 0) {
-    badge.textContent = cart.length;
-    badge.style.display = 'flex';
-  } else {
-    badge.style.display = 'none';
-  }
-}
-
-// Add to cart
-function addToCart(product) {
-  // Check if already in cart
-  const exists = cart.find(item => item.id === product.id);
-  if (exists) {
-    utils.showAlert('This item is already in your cart!', 'warning');
-    return;
-  }
-
-  // Check if sold
-  if (product.currentStatus === 'Sold') {
-    utils.showAlert('This item is no longer available!', 'error');
-    return;
-  }
-
-  cart.push(product);
-  saveCart();
-  utils.showAlert(`${product.name} added to cart!`, 'success');
-}
-
-// Remove from cart
-function removeFromCart(productId) {
-  cart = cart.filter(item => item.id !== productId);
-  saveCart();
-}
-
-// Clear cart
-function clearCart() {
-  if (confirm('Are you sure you want to clear your cart?')) {
-    cart = [];
-    saveCart();
-    utils.showAlert('Cart cleared!', 'success');
-  }
-}
-
-// Open cart modal
-function openCart() {
-  document.getElementById('cart-modal').classList.add('active');
-  updateCartModal();
-}
-
-// Close cart modal
-function closeCart() {
-  document.getElementById('cart-modal').classList.remove('active');
-}
-
-// Update cart modal content
-function updateCartModal() {
-  const cartItems = document.getElementById('cart-items');
-  const cartTotal = document.getElementById('cart-total');
-
-  if (cart.length === 0) {
-    cartItems.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">Your cart is empty</p>';
-    cartTotal.textContent = '0 ETH';
-    return;
-  }
-
-  let total = BigInt(0);
-  const itemsHTML = cart.map(item => {
-    total += BigInt(item.priceInWei);
-    const priceInEth = ethers.formatEther(item.priceInWei);
-    
-    return `
-      <div class="cart-item">
-        <div>
-          <div style="font-weight: 600; margin-bottom: 0.25rem;">${item.name}</div>
-          <div style="font-size: 0.875rem; color: var(--text-secondary);">
-            From: ${item.originFarm}
-          </div>
-          <div style="font-size: 0.875rem; color: var(--primary-color); margin-top: 0.25rem;">
-            ${priceInEth} ETH
-          </div>
-        </div>
-        <button 
-          data-product-id="${item.id}"
-          class="btn btn-ghost remove-from-cart-btn"
-          style="padding: 0.5rem; color: var(--error);"
-        >
-          🗑️
-        </button>
-      </div>
-    `;
-  }).join('');
-
-  cartItems.innerHTML = itemsHTML;
-  cartTotal.textContent = `${ethers.formatEther(total)} ETH`;
-}
-
-// Checkout - Purchase all items in cart
-async function checkout() {
-  if (cart.length === 0) {
-    utils.showAlert('Your cart is empty!', 'warning');
-    return;
-  }
-
-  const initialized = await initWeb3();
-  if (!initialized) {
-    utils.showAlert('Please connect your wallet first', 'error');
-    return;
-  }
-
-  const checkoutBtn = document.getElementById('checkout-btn');
-  checkoutBtn.disabled = true;
-  checkoutBtn.innerHTML = '<span class="spinner"></span> Processing...';
-
-  try {
-    const contract = centralizedWallet.getContract(CONTRACT_ABI);
-    if (!contract) {
-      throw new Error('Unable to connect to smart contract');
-    }
-
-    // Process each item in cart
-    for (const item of cart) {
-      utils.showAlert(`Purchasing ${item.name}...`, 'warning');
-      
-      const tx = await contract.buyProduce(item.id, {
-        value: item.priceInWei
-      });
-      
-      await tx.wait();
-      utils.showAlert(`${item.name} purchased successfully!`, 'success');
-    }
-
-    // Clear cart after successful purchase
-    cart = [];
-    saveCart();
-    closeCart();
-    
-    // Reload products
-    await loadProducts();
-    
-    utils.showAlert('All items purchased successfully!', 'success');
-  } catch (error) {
-    console.error('Checkout error:', error);
-    utils.showAlert(error.message || 'Purchase failed. Please try again.', 'error');
-  } finally {
-    checkoutBtn.disabled = false;
-    checkoutBtn.textContent = 'Checkout';
-  }
-}
-
-// Load all products from database (with blockchain sync)
-async function loadProducts() {
+// Load all products from database
+async function loadProducts(page = 1, search = '', status = 'available') {
   const grid = document.getElementById('products-grid');
   grid.innerHTML = '<p style="color: var(--text-secondary); grid-column: 1/-1; text-align: center;">Loading products...</p>';
 
   try {
-    // Load from database first (faster)
     const searchParams = new URLSearchParams({
-      page: 1,
-      limit: 20,
-      status: 'available',
+      page: page,
+      limit: 12,
+      search: search,
+      status: status,
       sortBy: 'createdAt',
       sortOrder: 'desc'
     });
@@ -207,112 +27,26 @@ async function loadProducts() {
       method: 'GET'
     });
 
-    allProducts = response.data.items || [];
-
-    if (allProducts.length === 0) {
-      grid.innerHTML = '<p style="color: var(--text-secondary); grid-column: 1/-1; text-align: center;">No products available yet.</p>';
-      return;
+    if (response.success) {
+      allProducts = response.data.items || [];
+      currentPage = response.data.pagination.currentPage;
+      totalPages = response.data.pagination.totalPages;
+      
+      displayProducts(allProducts);
+      updatePagination(response.data.pagination);
+    } else {
+      throw new Error(response.message || 'Failed to load products');
     }
-
-    displayProducts(allProducts);
-
-    // Optional: Sync with blockchain in background for real-time status
-    syncWithBlockchain();
 
   } catch (error) {
     console.error('Error loading products:', error);
-    grid.innerHTML = '<p style="color: var(--error); grid-column: 1/-1; text-align: center;">Failed to load products. Please refresh the page.</p>';
+    grid.innerHTML = `
+      <div style="grid-column: 1/-1; text-align: center; padding: 2rem;">
+        <div style="color: var(--error); font-size: 1.125rem; margin-bottom: 1rem;">Failed to load products</div>
+        <button onclick="window.location.reload()" class="btn btn-primary">🔄 Retry</button>
+      </div>
+    `;
   }
-}
-
-// Sync database with blockchain (background process)
-async function syncWithBlockchain() {
-  const initialized = await initWeb3();
-  if (!initialized) return;
-
-  try {
-    const contract = centralizedWallet.getContract(CONTRACT_ABI);
-    if (!contract) return;
-
-    // Check blockchain status for each product
-    for (const product of allProducts) {
-      try {
-        const details = await contract.getProduceDetails(product.blockchainId);
-        const blockchainStatus = details[4]; // currentStatus
-        
-        // If status changed on blockchain, update database
-        if (blockchainStatus !== product.currentStatus) {
-          await utils.apiCall(`/api/v1/produce/${product.blockchainId}/status`, {
-            method: 'PATCH',
-            body: JSON.stringify({
-              status: blockchainStatus
-            }),
-          });
-          
-          // Update local data
-          product.currentStatus = blockchainStatus;
-          product.isAvailable = blockchainStatus !== 'Sold';
-        }
-      } catch (err) {
-        console.log(`Sync error for product ${product.blockchainId}:`, err);
-      }
-    }
-
-    // Refresh display with updated data
-    displayProducts(allProducts);
-  } catch (error) {
-    console.log('Blockchain sync error:', error);
-  }
-}
-
-// Get reviews for specific produce
-function getProduceReviews(produceId) {
-  const saved = localStorage.getItem('produce_reviews');
-  const allReviews = saved ? JSON.parse(saved) : [];
-  return allReviews.filter(review => review.produceId === produceId);
-}
-
-// Setup event listeners for dynamically created buttons
-function setupDynamicEventListeners() {
-  document.addEventListener('click', (e) => {
-    // Handle add to cart buttons
-    if (e.target.classList.contains('add-to-cart-btn')) {
-      const productData = JSON.parse(e.target.dataset.product);
-      addToCart(productData);
-    }
-    
-    // Handle view product details buttons
-    if (e.target.classList.contains('view-product-btn')) {
-      const productId = e.target.dataset.productId;
-      viewProductDetails(productId);
-    }
-    
-    // Handle remove from cart buttons
-    if (e.target.classList.contains('remove-from-cart-btn')) {
-      const productId = e.target.dataset.productId;
-      removeFromCart(productId);
-    }
-    
-    // Handle cart badge click
-    if (e.target.id === 'cart-badge' || e.target.closest('#cart-badge')) {
-      openCart();
-    }
-    
-    // Handle close cart
-    if (e.target.classList.contains('close-cart-btn')) {
-      closeCart();
-    }
-    
-    // Handle checkout
-    if (e.target.id === 'checkout-btn') {
-      checkout();
-    }
-    
-    // Handle clear cart
-    if (e.target.classList.contains('clear-cart-btn')) {
-      clearCart();
-    }
-  });
 }
 
 // Display products in grid
@@ -320,78 +54,93 @@ function displayProducts(products) {
   const grid = document.getElementById('products-grid');
 
   if (products.length === 0) {
-    grid.innerHTML = '<p style="color: var(--text-secondary); grid-column: 1/-1; text-align: center;">No products found.</p>';
+    grid.innerHTML = `
+      <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-secondary);">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🌾</div>
+        <h3>No products available</h3>
+        <p>Check back later for fresh produce from our farmers!</p>
+      </div>
+    `;
     return;
   }
 
   const productsHTML = products.map(product => {
-    const priceInEth = ethers.formatEther(product.priceInWei);
-    const isAvailable = product.currentStatus !== 'Sold';
+    const priceInEth = ethers.formatEther(product.priceInWei || '0');
+    const isAvailable = product.isAvailable && product.currentStatus !== 'Sold';
     const statusClass = isAvailable ? 'status-available' : 'status-sold';
-    const date = new Date(Number(product.registrationTimestamp) * 1000);
+    const date = new Date(product.createdAt);
 
-    // Get reviews for this product
-    const reviews = getProduceReviews(product.id);
+    // Get reviews for this product (from localStorage)
+    const reviews = getProduceReviews(product.id || product.blockchainId);
     const averageRating = reviews.length > 0 
       ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
       : 0;
 
     return `
       <div class="product-card">
-        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-          <h3 style="font-size: 1.25rem; font-weight: 600; margin: 0;">${product.name}</h3>
+        <div class="product-image">
+          🌾
+        </div>
+        
+        <div class="product-header">
+          <h3 class="product-name">${product.name}</h3>
           <span class="product-status ${statusClass}">${product.currentStatus}</span>
         </div>
 
         ${reviews.length > 0 ? `
-          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
-            <span style="color: #ffd700; font-size: 1rem;">⭐ ${averageRating}</span>
+          <div class="product-rating">
+            <span style="color: #ffd700;">⭐ ${averageRating}</span>
             <span style="color: var(--text-secondary); font-size: 0.875rem;">
-              (${reviews.length})
+              (${reviews.length} review${reviews.length !== 1 ? 's' : ''})
             </span>
           </div>
         ` : ''}
 
-        <div style="display: grid; gap: 0.5rem; margin-bottom: 1rem; font-size: 0.875rem;">
-          <div><strong>Origin:</strong> ${product.originFarm}</div>
-          <div><strong>Farmer:</strong>
-            <code style="font-size: 0.7rem; background-color: rgba(0,0,0,0.3); padding: 0.125rem 0.25rem; border-radius: 0.25rem;">
-              ${product.originalFarmer.slice(0, 6)}...${product.originalFarmer.slice(-4)}
-            </code>
+        <div class="product-details">
+          <div class="detail-row">
+            <span class="detail-label">Origin:</span>
+            <span class="detail-value">${product.originFarm}</span>
           </div>
-          <div><strong>Registered:</strong> ${date.toLocaleDateString()}</div>
+          <div class="detail-row">
+            <span class="detail-label">Farmer:</span>
+            <span class="detail-value farmer-address">
+              ${product.originalFarmer ? `${product.originalFarmer.slice(0, 8)}...` : 'Unknown'}
+            </span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">QR Code:</span>
+            <span class="detail-value">${product.qrCode || 'N/A'}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Listed:</span>
+            <span class="detail-value">${date.toLocaleDateString()}</span>
+          </div>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-          <div>
-            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Price</div>
-            <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary-color);">
-              ${priceInEth} ETH
-            </div>
+        <div class="product-footer">
+          <div class="product-price">
+            <div class="price-label">Price</div>
+            <div class="price-value">${priceInEth} ETH</div>
+            <div class="price-usd">~$${(parseFloat(priceInEth) * 2500).toFixed(2)}</div>
           </div>
-          <div style="display: flex; gap: 0.5rem;">
+          
+          <div class="product-actions">
             <button 
               class="btn btn-outline view-product-btn"
-              data-product-id="${product.id}"
-              style="padding: 0.5rem 0.75rem;"
+              onclick="viewProduct('${product.id || product.blockchainId}')"
             >
-              View
+              👁️ View
             </button>
             ${isAvailable ? `
               <button 
                 class="btn btn-primary add-to-cart-btn"
-                data-product='${JSON.stringify(product).replace(/'/g, "&apos;")}'
-                style="padding: 0.5rem 0.75rem;"
+                onclick="addToCart(${JSON.stringify(product).replace(/"/g, '&quot;')})"
               >
-                🛒 Add
+                🛒 Add to Cart
               </button>
             ` : `
-              <button 
-                class="btn btn-ghost" 
-                disabled
-                style="padding: 0.5rem 0.75rem; opacity: 0.5; cursor: not-allowed;"
-              >
-                Sold Out
+              <button class="btn btn-ghost" disabled>
+                ❌ Sold Out
               </button>
             `}
           </div>
@@ -403,69 +152,243 @@ function displayProducts(products) {
   grid.innerHTML = productsHTML;
 }
 
+// Update pagination controls
+function updatePagination(pagination) {
+  const paginationEl = document.getElementById('pagination');
+  if (!paginationEl) return;
+
+  if (pagination.totalPages <= 1) {
+    paginationEl.innerHTML = '';
+    return;
+  }
+
+  let paginationHTML = '';
+
+  // Previous button
+  if (pagination.hasPrev) {
+    paginationHTML += `<button onclick="loadProducts(${pagination.currentPage - 1})" class="btn btn-outline">← Previous</button>`;
+  }
+
+  // Page numbers
+  const startPage = Math.max(1, pagination.currentPage - 2);
+  const endPage = Math.min(pagination.totalPages, pagination.currentPage + 2);
+
+  for (let i = startPage; i <= endPage; i++) {
+    const isActive = i === pagination.currentPage;
+    paginationHTML += `
+      <button 
+        onclick="loadProducts(${i})" 
+        class="btn ${isActive ? 'btn-primary' : 'btn-outline'}"
+      >
+        ${i}
+      </button>
+    `;
+  }
+
+  // Next button
+  if (pagination.hasNext) {
+    paginationHTML += `<button onclick="loadProducts(${pagination.currentPage + 1})" class="btn btn-outline">Next →</button>`;
+  }
+
+  paginationEl.innerHTML = paginationHTML;
+}
+
+// Search products
+function searchProducts() {
+  const searchTerm = document.getElementById('search-input').value.trim();
+  loadProducts(1, searchTerm);
+}
+
+// Get reviews from localStorage
+function getProduceReviews(produceId) {
+  const saved = localStorage.getItem('produce_reviews');
+  const allReviews = saved ? JSON.parse(saved) : [];
+  return allReviews.filter(review => review.produceId === produceId);
+}
+
+// Cart management
+function loadCart() {
+  const savedCart = localStorage.getItem('kissan_cart');
+  if (savedCart) {
+    cart = JSON.parse(savedCart);
+    updateCartBadge();
+  }
+}
+
+function saveCart() {
+  localStorage.setItem('kissan_cart', JSON.stringify(cart));
+  updateCartBadge();
+  updateCartModal();
+}
+
+function updateCartBadge() {
+  const badge = document.getElementById('cart-count');
+  if (cart.length > 0) {
+    badge.textContent = cart.length;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+function addToCart(product) {
+  const exists = cart.find(item => (item.id || item.blockchainId) === (product.id || product.blockchainId));
+  if (exists) {
+    utils.showAlert('This item is already in your cart!', 'warning');
+    return;
+  }
+
+  if (product.currentStatus === 'Sold' || !product.isAvailable) {
+    utils.showAlert('This item is no longer available!', 'error');
+    return;
+  }
+
+  cart.push(product);
+  saveCart();
+  utils.showAlert(`${product.name} added to cart!`, 'success');
+}
+
+function removeFromCart(productId) {
+  cart = cart.filter(item => (item.id || item.blockchainId) !== productId);
+  saveCart();
+}
+
 // View product details
-function viewProductDetails(productId) {
-  utils.redirect(`customer.html?id=${productId}`);
+function viewProduct(productId) {
+  // Increment view count
+  utils.apiCall(`/api/v1/produce/${productId}/view`, { method: 'POST' }).catch(console.error);
+  
+  // Navigate to product page
+  utils.redirect(`product.html?id=${productId}`);
 }
 
-// Filter and search products
-function filterProducts() {
-  const searchTerm = document.getElementById('search-input').value.toLowerCase();
-  const statusFilter = document.getElementById('status-filter').value;
-
-  let filtered = allProducts;
-
-  // Filter by search term
-  if (searchTerm) {
-    filtered = filtered.filter(product => 
-      product.name.toLowerCase().includes(searchTerm) ||
-      product.id.includes(searchTerm) ||
-      product.originFarm.toLowerCase().includes(searchTerm)
-    );
+// Cart modal functions
+function openCart() {
+  const modal = document.getElementById('cart-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+    updateCartModal();
   }
-
-  // Filter by status
-  if (statusFilter === 'available') {
-    filtered = filtered.filter(product => product.currentStatus !== 'Sold');
-  } else if (statusFilter === 'sold') {
-    filtered = filtered.filter(product => product.currentStatus === 'Sold');
-  }
-
-  displayProducts(filtered);
 }
+
+function closeCart() {
+  const modal = document.getElementById('cart-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+function updateCartModal() {
+  const cartItems = document.getElementById('cart-items');
+  const cartTotal = document.getElementById('cart-total');
+
+  if (cart.length === 0) {
+    cartItems.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">Your cart is empty</p>';
+    cartTotal.textContent = '0 ETH';
+    return;
+  }
+
+  let total = BigInt(0);
+  const itemsHTML = cart.map(item => {
+    total += BigInt(item.priceInWei || '0');
+    const priceInEth = ethers.formatEther(item.priceInWei || '0');
+    
+    return `
+      <div class="cart-item">
+        <div>
+          <div class="cart-item-title">${item.name}</div>
+          <div style="font-size: 0.875rem; color: var(--text-secondary);">
+            From: ${item.originFarm}
+          </div>
+          <div class="cart-item-price">${priceInEth} ETH</div>
+        </div>
+        <button 
+          onclick="removeFromCart('${item.id || item.blockchainId}')"
+          class="remove-cart-btn"
+        >
+          🗑️
+        </button>
+      </div>
+    `;
+  }).join('');
+
+  cartItems.innerHTML = itemsHTML;
+  cartTotal.textContent = `${ethers.formatEther(total)} ETH`;
+}
+
+// Checkout function
+async function checkout() {
+  if (cart.length === 0) {
+    utils.showAlert('Your cart is empty!', 'warning');
+    return;
+  }
+
+  await centralizedWallet.waitForReady();
+  
+  if (!centralizedWallet.isWalletConnected()) {
+    utils.showAlert('Please connect your wallet first', 'error');
+    return;
+  }
+
+  const checkoutBtn = document.getElementById('checkout-btn');
+  checkoutBtn.disabled = true;
+  checkoutBtn.textContent = 'Processing...';
+
+  try {
+    for (const item of cart) {
+      // Navigate to transaction page for each item
+      sessionStorage.setItem('transactionProductId', item.id || item.blockchainId);
+      utils.redirect(`transaction.html?productId=${item.id || item.blockchainId}`);
+      break; // Process one item at a time
+    }
+  } catch (error) {
+    console.error('Checkout error:', error);
+    utils.showAlert('Checkout failed. Please try again.', 'error');
+    checkoutBtn.disabled = false;
+    checkoutBtn.textContent = 'Checkout';
+  }
+}
+
+function clearCart() {
+  if (confirm('Are you sure you want to clear your cart?')) {
+    cart = [];
+    saveCart();
+    utils.showAlert('Cart cleared!', 'success');
+  }
+}
+
+// Global functions
+window.searchProducts = searchProducts;
+window.viewProduct = viewProduct;
+window.addToCart = addToCart;
+window.removeFromCart = removeFromCart;
+window.openCart = openCart;
+window.closeCart = closeCart;
+window.checkout = checkout;
+window.clearCart = clearCart;
+window.loadProducts = loadProducts;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', async () => {
-  // Check authentication via cookies
   if (!(await utils.checkAuth())) {
     utils.redirect('login.html');
     return;
   }
 
-  // Setup dynamic event listeners
-  setupDynamicEventListeners();
-
   // Load cart from storage
   loadCart();
 
-  // Load products
+  // Load initial products
   await loadProducts();
 
-  // Setup event listeners for search and filter
+  // Setup search functionality
   const searchInput = document.getElementById('search-input');
-  const statusFilter = document.getElementById('status-filter');
-  const refreshBtn = document.getElementById('refresh-btn');
-
   if (searchInput) {
-    searchInput.addEventListener('input', filterProducts);
-  }
-  
-  if (statusFilter) {
-    statusFilter.addEventListener('change', filterProducts);
-  }
-  
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', loadProducts);
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        searchProducts();
+      }
+    });
   }
 
   // Close modal when clicking outside
@@ -478,5 +401,3 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 });
-
-// Don't export global functions

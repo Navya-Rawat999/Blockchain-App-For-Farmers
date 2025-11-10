@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transaction Confirmation - Kissan Sathi</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/navbar.css">
+  <link rel="stylesheet" href="../css/transaction.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav id="navbar"></nav>
+
+  <main class="main-content">
+    <div class="transaction-container">
+      <!-- Loading State -->
+      <div id="loading-state" class="loading-content" style="margin: 4rem auto; max-width: 400px; text-align: center;">
+        <div class="loading-spinner"></div>
+        <h2 style="margin-bottom: 1rem;">Loading Transaction Details...</h2>
+        <p style="color: var(--text-secondary);">Please wait while we prepare your transaction.</p>
+      </div>
+
+      <!-- Error State -->
+      <div id="error-state" style="display: none; text-align: center; padding: 4rem 2rem;">
+        <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--error);">⚠️</div>
+        <h2 style="color: var(--error); margin-bottom: 1rem;">Transaction Error</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 2rem;" id="error-message">
+          Unable to prepare transaction. Please try again.
+        </p>
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+          <a href="javascript:history.back()" class="btn btn-outline">← Go Back</a>
+          <button onclick="retryTransaction()" class="btn btn-primary">🔄 Retry</button>
+        </div>
+      </div>
+
+      <!-- Transaction Content -->
+      <div id="transaction-content" style="display: none;">
+        <!-- Header -->
+        <div class="transaction-header">
+          <span class="transaction-icon">🔒</span>
+          <h1 class="transaction-title">Confirm Purchase</h1>
+          <p class="transaction-subtitle">Review the details before confirming your blockchain transaction</p>
+        </div>
+
+        <!-- Progress Indicator -->
+        <div class="progress-indicator">
+          <div class="progress-step completed">1</div>
+          <div class="progress-step active">2</div>
+          <div class="progress-step">3</div>
+          <div class="progress-step">4</div>
+        </div>
+
+        <div class="transaction-details">
+          <!-- Product Details -->
+          <div class="detail-section">
+            <h3 class="section-title">
+              <span class="section-icon">🌾</span>
+              Product Details
+            </h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Product Name</span>
+                <span class="detail-value" id="product-name">Loading...</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Product ID</span>
+                <span class="detail-value" id="product-id">Loading...</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Origin Farm</span>
+                <span class="detail-value" id="origin-farm">Loading...</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Current Status</span>
+                <span class="detail-value success" id="product-status">Available</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">QR Code</span>
+                <span class="detail-value" id="qr-code">Loading...</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Seller Information -->
+          <div class="detail-section">
+            <h3 class="section-title">
+              <span class="section-icon">🧑‍🌾</span>
+              Seller Information
+            </h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Original Farmer</span>
+                <span class="detail-value" id="original-farmer">Loading...</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Current Seller</span>
+                <span class="detail-value" id="current-seller">Loading...</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Registration Date</span>
+                <span class="detail-value" id="registration-date">Loading...</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Transaction Details -->
+          <div class="detail-section">
+            <h3 class="section-title">
+              <span class="section-icon">💰</span>
+              Payment Information
+            </h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Product Price</span>
+                <span class="detail-value highlight" id="product-price">0.00 ETH</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Payment Method</span>
+                <span class="detail-value">Ethereum (ETH)</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Your Wallet</span>
+                <span class="detail-value" id="buyer-address">Not connected</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Wallet Balance</span>
+                <span class="detail-value" id="wallet-balance">0.0000 ETH</span>
+              </div>
+            </div>
+
+            <!-- Price Breakdown -->
+            <div class="price-breakdown">
+              <div class="price-row">
+                <span>Product Price:</span>
+                <span id="price-amount">0.00 ETH</span>
+              </div>
+              <div class="price-row">
+                <span>Platform Fee:</span>
+                <span>0.00 ETH</span>
+              </div>
+              <div class="price-row total">
+                <span>Total Amount:</span>
+                <span id="total-amount">0.00 ETH</span>
+              </div>
+            </div>
+
+            <!-- Gas Estimation -->
+            <div class="gas-estimation">
+              <div class="price-row">
+                <span>Estimated Gas Fee:</span>
+                <span id="gas-estimate">~0.001 ETH</span>
+              </div>
+              <div class="gas-warning">
+                <span>⚠️</span>
+                <span>Gas fees are estimated and may vary based on network congestion</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Blockchain Information -->
+          <div class="detail-section">
+            <h3 class="section-title">
+              <span class="section-icon">⛓️</span>
+              Blockchain Information
+            </h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Network</span>
+                <span class="detail-value" id="network-name">Loading...</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Contract Address</span>
+                <span class="detail-value" id="contract-address">Loading...</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Function Call</span>
+                <span class="detail-value">buyProduce(uint256)</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Transaction Type</span>
+                <span class="detail-value">Smart Contract Execution</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Balance Warning -->
+        <div id="balance-warning" class="balance-warning" style="display: none;">
+          <span class="balance-warning-icon">⚠️</span>
+          <div>
+            <strong>Insufficient Balance:</strong> 
+            You need at least <span id="required-amount">0.00</span> ETH (including gas fees) to complete this transaction.
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="transaction-actions">
+          <button onclick="cancelTransaction()" class="action-button cancel-button">
+            ❌ Cancel
+          </button>
+          <button onclick="confirmTransaction()" class="action-button confirm-button" id="confirm-button">
+            ✅ Confirm & Pay
+          </button>
+        </div>
+
+        <!-- Terms Notice -->
+        <div style="text-align: center; margin-top: 2rem; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 0.5rem; font-size: 0.875rem; color: var(--text-secondary);">
+          <p>By confirming this transaction, you agree to purchase the produce item at the specified price. 
+          This transaction will be recorded on the blockchain and cannot be reversed.</p>
+          <p style="margin-top: 0.5rem;">
+            <strong>Note:</strong> Make sure you have sufficient ETH balance to cover both the product price and gas fees.
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Transaction Processing Overlay -->
+  <div id="processing-overlay" class="loading-overlay" style="display: none;">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <h2 class="loading-title">Processing Transaction</h2>
+      <p class="loading-message" id="processing-message">
+        Waiting for MetaMask confirmation...
+      </p>
+      <div class="progress-indicator">
+        <div class="progress-step completed">1</div>
+        <div class="progress-step completed">2</div>
+        <div class="progress-step active" id="progress-step-3">3</div>
+        <div class="progress-step" id="progress-step-4">4</div>
+      </div>
+      <div class="loading-steps">
+        <strong>Steps:</strong>
+        <ol>
+          <li>✅ Transaction prepared</li>
+          <li>✅ Details confirmed</li>
+          <li id="step-3">🔄 Waiting for wallet approval...</li>
+          <li id="step-4">⏳ Confirming on blockchain...</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; 2025 Kissan Sathi. Built for transparent agriculture.</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script type="module" src="../js/utils.js"></script>
+  <script type="module" src="../js/navbar.js"></script>
+  <script type="module" src="../js/transaction.js"></script>
+</body>
+</html>
