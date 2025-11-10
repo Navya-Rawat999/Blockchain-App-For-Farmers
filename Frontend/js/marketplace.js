@@ -1,18 +1,13 @@
 import utils from '../js/utils.js';
-import centralizedWallet from '../js/wallet.js';
+import centralizedWallet, { CONTRACT_ABI } from '../js/wallet.js';
+import { ethers } from 'ethers';
 
 // Marketplace - Browse and purchase produce
 let allProducts = [];
 let cart = [];
 
-// Contract ABI - Updated to match new contract
-const CONTRACT_ABI = [
-  "function getProduceDetails(uint256 _id) public view returns (uint256 id, string memory name, address originalFarmer, address currentSeller, string memory currentStatus, uint256 priceInWei, string memory originFarm, string memory qrCode, uint256 registrationTimestamp)",
-  "function buyProduce(uint256 _id) public payable",
-  "function getSaleHistory(uint256 _id) public view returns (tuple(uint256 ProduceId, address buyer, address seller, uint256 pricePaidInWei, uint256 SaleTimeStamp)[] memory)",
-  "function nextProduceId() public view returns (uint256)",
-  "function getProduceIdsByName(string memory _name) public view returns (uint256[] memory)"
-];
+// Use CONTRACT_ABI from environment via wallet module
+// CONTRACT_ABI is now imported from wallet.js which gets it from environment
 
 // Initialize Web3 connection using centralized wallet
 async function initWeb3() {

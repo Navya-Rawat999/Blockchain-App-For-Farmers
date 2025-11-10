@@ -108,13 +108,12 @@
   </footer>
 
   <!-- Scripts - Load in correct order -->
-  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.5/dist/axios.min.js"></script>
-  <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js" type="application/javascript"></script>
-  <script type="module" src="../js/utils.js"></script>
-  <script type="module" src="../js/navbar.js"></script>
   <script type="module">
-    // Import and use centralized wallet
+    // Import modules
+    import utils from '../js/utils.js';
+    import '../js/navbar.js';
     import centralizedWallet from '../js/wallet.js';
+    import { ethers } from 'ethers';
     
     // Wait for wallet to be ready and check connection
     document.addEventListener('DOMContentLoaded', async () => {
@@ -166,7 +165,7 @@
         try {
           const provider = centralizedWallet.getProvider();
           const balance = await provider.getBalance(centralizedWallet.getAddress());
-          const balanceInEth = window.ethers.formatEther(balance);
+          const balanceInEth = ethers.formatEther(balance);
           const balanceElement = document.getElementById('wallet-balance-display');
           if (balanceElement) {
             balanceElement.textContent = parseFloat(balanceInEth).toFixed(4);

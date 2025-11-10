@@ -1,4 +1,9 @@
 import utils from '../js/utils.js';
+import centralizedWallet, { CONTRACT_ABI } from '../js/wallet.js';
+import { ethers } from 'ethers';
+
+// Contract address - should be the same as in wallet.js
+const CONTRACT_ADDRESS = '0x742d35Cc6135C4Ad4C006C8C704aC8DC7CE18F72'; // Update with actual address
 
 // Check authentication when the script loads
 document.addEventListener('DOMContentLoaded', async () => {
@@ -12,15 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // QR Code Scanner
 let html5QrcodeScanner = null;
-let contract = null;
 let provider = null;
-
-// Contract ABI - simplified
-const CONTRACT_ABI = [
-  "function getProduceDetails(uint256 _id) public view returns (uint256 id, string memory name, address originalFarmer, address currentSeller, string memory currentStatus, uint256 priceInWei, string memory originFarm, string memory qrCode)"
-];
-
-const CONTRACT_ADDRESS = '0x...'; // Replace with your deployed contract address
 
 // Initialize the scanner and setup
 async function initScanner() {
@@ -30,30 +27,16 @@ async function initScanner() {
 
 // Initialize Web3 connection
 async function initWeb3() {
-  if (typeof window.ethereum !== 'undefined') {
-    // Wait for ethers to be available
-    if (typeof window.ethers === 'undefined') {
-      let attempts = 0;
-      while (typeof window.ethers === 'undefined' && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
-      
-      if (typeof window.ethers === 'undefined') {
-        throw new Error('Ethers library failed to load. Please refresh the page.');
-      }
+  try {
+    await centralizedWallet.waitForReady();
+    
+    if (!centralizedWallet.isWalletConnected()) {
+      await centralizedWallet.connectWallet();
     }
-
-    try {
-      provider = new window.ethers.BrowserProvider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      contract = new window.ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
-      return true;
-    } catch (error) {
-      console.error('Web3 initialization error:', error);
-      return false;
-    }
-  } else {
+    
+    return centralizedWallet.isWalletConnected();
+  } catch (error) {
+    console.error('Web3 initialization error:', error);
     utils.showAlert('Please install MetaMask to use blockchain features', 'warning');
     return false;
   }
@@ -89,6 +72,7 @@ function initQRScanner() {
     qrbox: { width: 250, height: 250 }
   };
 
+  // Html5QrcodeScanner will be available globally from CDN
   html5QrcodeScanner = new Html5QrcodeScanner(
     "qr-reader",
     config,
@@ -121,18 +105,22 @@ async function handleScanResult(qrData) {
 
   try {
     // Initialize Web3 if needed
-    if (!contract) {
-      const initialized = await initWeb3();
-      if (!initialized) {
-        throw new Error('Please connect your wallet first');
-      }
+    const initialized = await initWeb3();
+    if (!initialized) {
+      throw new Error('Please connect your wallet first');
     }
 
-    // Extract produce ID from QR data (assuming QR contains just the ID or parse it)
+    // Extract produce ID from QR data
     const produceId = extractProduceId(qrData);
     
     if (!produceId) {
       throw new Error('Invalid QR code format');
+    }
+
+    // Get contract using centralized wallet
+    const contract = centralizedWallet.getContract(CONTRACT_ABI);
+    if (!contract) {
+      throw new Error('Unable to connect to smart contract');
     }
 
     // Fetch produce details from blockchain

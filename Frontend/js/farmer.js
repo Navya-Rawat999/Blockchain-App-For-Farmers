@@ -1,15 +1,8 @@
 import utils from '../js/utils.js';
-import centralizedWallet from '../js/wallet.js';
+import centralizedWallet, { CONTRACT_ABI } from '../js/wallet.js';
+import { ethers } from 'ethers';
 
 // Farmer Dashboard - Web3 interactions using centralized wallet
-const CONTRACT_ABI = [
-  "function registerProduce(string memory _name, string memory _originFarm, uint256 _initialPriceInWei, string memory _QRCodeData) public returns(uint256)",
-  "function getProduceDetails(uint256 _id) public view returns (uint256 id, string memory name, address originalFarmer, address currentSeller, string memory currentStatus, uint256 priceInWei, string memory originFarm, string memory qrCode, uint256 registrationTimestamp)",
-  "function updateProducePrice(uint256 _id, uint256 _newPriceInWei) public",
-  "function updateProduceStatus(uint256 _id, string memory _newStatus) public",
-  "function nextProduceId() public view returns (uint256)",
-  "event ProduceRegistered(uint256 indexed id, string name, address indexed farmer, string originFarm)"
-];
 
 // Get reviews for specific produce
 function getProduceReviews(produceId) {
@@ -361,7 +354,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         throw new Error('Unable to connect to smart contract');
       }
 
-      const priceInWei = window.ethers.parseEther(priceInEth);
+      const priceInWei = ethers.parseEther(priceInEth);
 
       utils.showAlert('Registering on blockchain...', 'warning');
       const tx = await contract.registerProduce(name, originFarm, priceInWei, qrCode);
@@ -417,7 +410,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       utils.showAlert(errorMessage, 'error');
     } finally {
       registerBtn.disabled = false;
-      registerBtn.textContent = 'Register Produce';
+      registerBtn.textContent = 'Register Produce on Blockchain';
     }
   });
 

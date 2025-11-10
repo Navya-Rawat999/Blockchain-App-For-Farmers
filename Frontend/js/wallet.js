@@ -1,4 +1,29 @@
 import utils from './utils.js';
+import { ethers } from 'ethers';
+
+// Get Contract ABI from environment variables
+let CONTRACT_ABI;
+try {
+  const abiString = import.meta.env.VITE_CONTRACT_ABI;
+  if (abiString) {
+    CONTRACT_ABI = JSON.parse(abiString);
+  } else {
+    // Fallback ABI if environment variable is not set
+    CONTRACT_ABI = [
+      "function getProduceDetails(uint256 _id) public view returns (uint256 id, string memory name, address originalFarmer, address currentSeller, string memory currentStatus, uint256 priceInWei, string memory originFarm, string memory qrCode, uint256 registrationTimestamp)",
+      "function registerProduce(string memory _name, string memory _originFarm, uint256 _initialPriceInWei, string memory _QRCodeData) public returns(uint256)",
+      "function buyProduce(uint256 _id) public payable"
+    ];
+  }
+} catch (error) {
+  console.error('Error parsing CONTRACT_ABI from environment:', error);
+  // Fallback ABI
+  CONTRACT_ABI = [
+    "function getProduceDetails(uint256 _id) public view returns (uint256 id, string memory name, address originalFarmer, address currentSeller, string memory currentStatus, uint256 priceInWei, string memory originFarm, string memory qrCode, uint256 registrationTimestamp)",
+    "function registerProduce(string memory _name, string memory _originFarm, uint256 _initialPriceInWei, string memory _QRCodeData) public returns(uint256)",
+    "function buyProduce(uint256 _id) public payable"
+  ];
+}
 
 class CentralizedWallet {
   constructor() {
@@ -20,6 +45,9 @@ class CentralizedWallet {
       80001: '0x742d35Cc6135C4Ad4C006C8C704aC8DC7CE18F72' // Mumbai Testnet
     };
 
+    // Get Infura URL from environment variables
+    this.infuraUrl = import.meta.env.VITE_INFURA_URL;
+
     this.initialize();
   }
 
@@ -28,7 +56,8 @@ class CentralizedWallet {
     this.isInitializing = true;
 
     try {
-      await this.waitForEthers();
+      // Ethers is now imported, so it's available
+      this.ethers = ethers;
       await this.checkExistingConnection();
       this.setupEventListeners();
       
@@ -46,24 +75,8 @@ class CentralizedWallet {
     }
   }
 
-  async waitForEthers() {
-    let attempts = 0;
-    const maxAttempts = 100;
-    
-    while (typeof window.ethers === 'undefined' && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      attempts++;
-    }
-    
-    if (typeof window.ethers === 'undefined') {
-      throw new Error('Ethers library not found after waiting');
-    }
-    
-    console.log('Ethers library loaded successfully');
-  }
-
   async checkExistingConnection() {
-    if (typeof window.ethereum !== 'undefined' && typeof window.ethers !== 'undefined') {
+    if (typeof window.ethereum !== 'undefined') {
       try {
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
         if (accounts.length > 0) {
@@ -88,14 +101,10 @@ class CentralizedWallet {
       throw new Error('MetaMask is not installed. Please install it from metamask.io');
     }
 
-    if (typeof window.ethers === 'undefined') {
-      throw new Error('Ethers library is not loaded. Please refresh the page.');
-    }
-
     try {
       await window.ethereum.request({ method: 'eth_requestAccounts' });
       
-      this.provider = new window.ethers.BrowserProvider(window.ethereum);
+      this.provider = new ethers.BrowserProvider(window.ethereum);
       this.signer = await this.provider.getSigner();
       this.userAddress = await this.signer.getAddress();
       
@@ -104,7 +113,7 @@ class CentralizedWallet {
       this.networkName = this.getNetworkName(this.networkId);
       
       const balance = await this.provider.getBalance(this.userAddress);
-      const balanceInEth = window.ethers.formatEther(balance);
+      const balanceInEth = ethers.formatEther(balance);
       
       this.isConnected = true;
 
@@ -163,11 +172,11 @@ class CentralizedWallet {
   }
 
   async updateBalance() {
-    if (!this.provider || !this.userAddress || typeof window.ethers === 'undefined') return null;
+    if (!this.provider || !this.userAddress) return null;
 
     try {
       const balance = await this.provider.getBalance(this.userAddress);
-      const balanceInEth = window.ethers.formatEther(balance);
+      const balanceInEth = ethers.formatEther(balance);
 
       await utils.apiCall('/wallet/balance', {
         method: 'PATCH',
@@ -186,11 +195,11 @@ class CentralizedWallet {
     return this.contractAddresses[this.networkId] || this.contractAddresses[11155111];
   }
 
-  getContract(abi) {
+  getContract(abi = CONTRACT_ABI) {
     const contractAddress = this.getContractAddress();
-    if (!contractAddress || !this.signer || typeof window.ethers === 'undefined') return null;
+    if (!contractAddress || !this.signer) return null;
     
-    return new window.ethers.Contract(contractAddress, abi, this.signer);
+    return new ethers.Contract(contractAddress, abi, this.signer);
   }
 
   getNetworkName(chainId) {
@@ -371,6 +380,9 @@ window.updateBalance = async () => {
     throw error;
   }
 };
+
+// Export the ABI for use in other modules
+export { CONTRACT_ABI };
 
 export default centralizedWallet;
 export { CentralizedWallet };

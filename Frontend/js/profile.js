@@ -1,14 +1,9 @@
 import utils from '../js/utils.js';
-import centralizedWallet from '../js/wallet.js';
+import centralizedWallet, { CONTRACT_ABI } from '../js/wallet.js';
+import { ethers } from 'ethers';
 
 // Profile page functionality using centralized wallet
-const CONTRACT_ABI = [
-  "function getProduceDetails(uint256 _id) public view returns (uint256 id, string memory name, address originalFarmer, address currentSeller, string memory currentStatus, uint256 priceInWei, string memory originFarm, string memory qrCode, uint256 registrationTimestamp)",
-  "function getSaleHistory(uint256 _id) public view returns (tuple(uint256 ProduceId, address buyer, address seller, uint256 pricePaidInWei, uint256 SaleTimeStamp)[] memory)",
-  "function nextProduceId() public view returns (uint256)",
-  "event ProduceRegistered(uint256 indexed id, string name, address indexed farmer, string originFarm)",
-  "event ProduceSold(uint256 indexed id, address indexed buyer, address indexed seller, uint256 pricePaidInWei)"
-];
+// CONTRACT_ABI is now imported from wallet.js which gets it from environment
 
 // Connect wallet using centralized wallet
 async function connectWallet() {
@@ -142,7 +137,7 @@ async function loadWalletInfo() {
     document.getElementById('network-name').textContent = network.name || `Chain ID: ${network.chainId}`;
 
     const balance = await provider.getBalance(userAddress);
-    const balanceInEth = window.ethers.formatEther(balance);
+    const balanceInEth = ethers.formatEther(balance);
     document.getElementById('wallet-balance').textContent = `${parseFloat(balanceInEth).toFixed(4)} ETH`;
     
     document.getElementById('stat-balance').textContent = `${parseFloat(balanceInEth).toFixed(4)} ETH`;
