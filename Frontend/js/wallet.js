@@ -301,6 +301,36 @@ class CentralizedWallet {
       checkReady();
     });
   }
+
+  // Add method to update balance
+  async updateBalance() {
+    if (!this.isConnected || !this.provider) return null;
+    
+    try {
+      const balance = await this.provider.getBalance(this.userAddress);
+      const balanceInEth = ethers.formatEther(balance);
+      return balanceInEth;
+    } catch (error) {
+      console.error('Error updating balance:', error);
+      return null;
+    }
+  }
+
+  // Add method to save wallet info to backend
+  async saveWalletToBackend(balance) {
+    try {
+      await utils.apiCall('/api/v1/users/wallet', {
+        method: 'PUT',
+        body: JSON.stringify({
+          walletAddress: this.userAddress,
+          balance: balance,
+          networkId: this.networkId
+        })
+      });
+    } catch (error) {
+      console.error('Error saving wallet to backend:', error);
+    }
+  }
 }
 
 // Create global instance
@@ -337,3 +367,6 @@ window.copyAddress = () => {
 // Export the ABI for use in other modules
 export { CONTRACT_ABI };
 export { CentralizedWallet };
+
+// Export default instance for easier use
+export default centralizedWallet;

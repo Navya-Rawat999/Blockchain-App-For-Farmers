@@ -17,23 +17,34 @@ const registerProduce = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Blockchain transaction details required");
   }
 
+  // Validate blockchain ID is a positive integer
+  const parsedBlockchainId = parseInt(blockchainId);
+  if (isNaN(parsedBlockchainId) || parsedBlockchainId <= 0) {
+    throw new ApiError(400, "Invalid blockchain ID");
+  }
+
+  // Validate price is a valid Wei amount
+  if (!priceInWei || priceInWei === '0') {
+    throw new ApiError(400, "Invalid price amount");
+  }
+
   // Check if blockchain ID already exists
-  const existingProduce = await ProduceItem.findOne({ blockchainId });
+  const existingProduce = await ProduceItem.findOne({ blockchainId: parsedBlockchainId });
   if (existingProduce) {
     throw new ApiError(409, "Produce with this blockchain ID already exists");
   }
 
   // Create produce item in database
   const produceItem = await ProduceItem.create({
-    id: blockchainId,
+    id: parsedBlockchainId,
     name: name.trim(),
     originalFarmer: req.user.username, // Store farmer username
     farmerAddress: req.user._id, // Store farmer's DB ID
     currentSeller: req.user.username,
-    priceInWei: priceInWei,
+    priceInWei: priceInWei.toString(), // Store as string for large numbers
     originFarm: originFarm.trim(),
     qrCode: qrCode.trim(),
-    blockchainId: blockchainId,
+    blockchainId: parsedBlockchainId,
     transactionHash: transactionHash,
     currentStatus: "Harvested",
     isAvailable: true

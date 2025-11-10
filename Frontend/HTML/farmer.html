@@ -17,10 +17,16 @@
       
       <!-- Wallet Connection Status -->
       <div class="card mb-2">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
           <div>
             <h3 style="margin: 0;">🦊 Wallet Status</h3>
-            <p style="margin: 0.5rem 0; color: var(--text-secondary);">Connect your wallet to register produce</p>
+            <p style="margin: 0.5rem 0; color: var(--text-secondary);">Connect your wallet to register produce on blockchain</p>
+            <div id="wallet-info" style="display: none; margin-top: 0.5rem;">
+              <small style="color: var(--success);">
+                ✓ Connected: <span id="connected-address"></span><br>
+                Balance: <span id="wallet-balance">0.0000 ETH</span>
+              </small>
+            </div>
           </div>
           <button class="btn btn-primary connect-wallet-btn" onclick="window.connectWallet()">
             Connect MetaMask
@@ -31,35 +37,38 @@
       <!-- Register New Produce -->
       <div class="card mb-2">
         <h2 class="section-title">📝 Register New Produce</h2>
+        <div id="registration-status" class="alert" style="display: none; margin-bottom: 1rem;"></div>
         <form id="register-produce-form">
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label" for="produce-name">Produce Name</label>
+              <label class="form-label" for="produce-name">Produce Name *</label>
               <input type="text" id="produce-name" class="form-input" required 
-                     placeholder="e.g., Organic Tomatoes">
+                     placeholder="e.g., Organic Tomatoes" maxlength="100">
             </div>
             <div class="form-group">
-              <label class="form-label" for="origin-farm">Origin Farm</label>
+              <label class="form-label" for="origin-farm">Origin Farm *</label>
               <input type="text" id="origin-farm" class="form-input" required 
-                     placeholder="e.g., Green Valley Farm">
+                     placeholder="e.g., Green Valley Farm" maxlength="100">
             </div>
           </div>
           
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label" for="price">Price (in ETH)</label>
+              <label class="form-label" for="price">Price (in ETH) *</label>
               <input type="number" id="price" class="form-input" required 
-                     placeholder="e.g., 0.01" step="0.001" min="0">
+                     placeholder="e.g., 0.01" step="0.001" min="0.001" max="1000">
+              <span class="form-help">Minimum: 0.001 ETH</span>
             </div>
             <div class="form-group">
-              <label class="form-label" for="qr-code">QR Code Data</label>
+              <label class="form-label" for="qr-code">QR Code Data *</label>
               <input type="text" id="qr-code" class="form-input" required 
-                     placeholder="e.g., FARM001-TOM-2025">
+                     placeholder="e.g., FARM001-TOM-2025" maxlength="50">
+              <span class="form-help">Unique identifier for your produce</span>
             </div>
           </div>
           
           <button type="submit" id="register-btn" class="btn btn-primary w-100">
-            Register Produce on Blockchain
+            📝 Register Produce on Blockchain
           </button>
         </form>
       </div>

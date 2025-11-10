@@ -1,9 +1,9 @@
 import utils from '../js/utils.js';
-import { CentralizedWallet, CONTRACT_ABI } from '../js/wallet.js';
+import centralizedWallet, { CONTRACT_ABI } from '../js/wallet.js';
 import { ethers } from 'ethers';
 
 // Create wallet instance
-const centralizedWallet = new CentralizedWallet();
+// const centralizedWallet = new CentralizedWallet();
 
 // Farmer Dashboard - Web3 interactions using centralized wallet
 
@@ -360,11 +360,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       const priceInWei = ethers.parseEther(priceInEth);
 
       utils.showAlert('Registering on blockchain...', 'warning');
+      
+      // Call the contract's registerProduce function
       const tx = await contract.registerProduce(name, originFarm, priceInWei, qrCode);
       
       utils.showAlert('Transaction submitted. Waiting for confirmation...', 'warning');
       const receipt = await tx.wait();
 
+      // Parse the ProduceRegistered event to get the blockchain ID
       const event = receipt.logs.find(log => {
         try {
           const parsed = contract.interface.parseLog(log);
@@ -382,7 +385,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       try {
         utils.showAlert('Saving to database...', 'warning');
-        await utils.apiCall('/produce/register', {
+        await utils.apiCall('/api/v1/produce/register', {
           method: 'POST',
           body: JSON.stringify({
             name,
@@ -408,6 +411,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         errorMessage = 'Please install MetaMask and connect your wallet.';
       } else if (error.message.includes('rejected')) {
         errorMessage = 'Transaction was rejected. Please try again.';
+      } else if (error.message.includes('insufficient funds')) {
+        errorMessage = 'Insufficient funds for transaction. Please add ETH to your wallet.';
       }
       
       utils.showAlert(errorMessage, 'error');
