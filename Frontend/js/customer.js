@@ -1,59 +1,43 @@
 import utils from '../js/utils.js';
+import centralizedWallet from '../js/wallet.js';
 
-// Customer Dashboard - View and purchase produce
-let contract = null;
-let provider = null;
-let signer = null;
-
-// Contract ABI - Updated to match new contract
+// Customer Dashboard - View and purchase produce using centralized wallet
 const CONTRACT_ABI = [
   "function getProduceDetails(uint256 _id) public view returns (uint256 id, string memory name, address originalFarmer, address currentSeller, string memory currentStatus, uint256 priceInWei, string memory originFarm, string memory qrCode, uint256 registrationTimestamp)",
   "function buyProduce(uint256 _id) public payable",
   "function getSaleHistory(uint256 _id) public view returns (tuple(uint256 ProduceId, address buyer, address seller, uint256 pricePaidInWei, uint256 SaleTimeStamp)[] memory)"
 ];
 
-const CONTRACT_ADDRESS = '0x742d35Cc6135C4Ad4C006C8C704aC8DC7CE18F72'; // Replace with your deployed contract address
-
-// Initialize Web3 connection
-async function initWeb3() {
-  if (typeof window.ethereum === 'undefined') {
-    throw new Error('MetaMask is not installed. Please install MetaMask to continue.');
-  }
-
-  // Wait for ethers to be available
-  if (typeof window.ethers === 'undefined') {
-    let attempts = 0;
-    while (typeof window.ethers === 'undefined' && attempts < 50) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      attempts++;
+// Setup event listeners for dynamically created buttons
+function setupDynamicEventListeners() {
+  document.addEventListener('click', (e) => {
+    // Handle buy produce buttons
+    if (e.target.classList.contains('buy-produce-btn')) {
+      const produceId = e.target.dataset.produceId;
+      const priceInWei = e.target.dataset.priceInWei;
+      buyProduce(produceId, priceInWei);
     }
     
-    if (typeof window.ethers === 'undefined') {
-      throw new Error('Ethers library failed to load. Please refresh the page.');
+    // Handle rating stars
+    if (e.target.classList.contains('star')) {
+      const rating = parseInt(e.target.dataset.rating);
+      setRating(rating);
     }
-  }
-
-  try {
-    // Request account access
-    await window.ethereum.request({ method: 'eth_requestAccounts' });
     
-    // Set up provider and signer
-    provider = new window.ethers.BrowserProvider(window.ethereum);
-    signer = await provider.getSigner();
+    // Handle submit review
+    if (e.target.id === 'submit-review-btn') {
+      const produceId = e.target.dataset.produceId;
+      submitReview(produceId);
+    }
     
-    // Create contract instance
-    contract = new window.ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-    
-    console.log('Web3 initialized successfully');
-    return true;
-  } catch (error) {
-    console.error('Web3 initialization error:', error);
-    throw error;
-  }
+    // Handle close modal
+    if (e.target.classList.contains('close-rating-modal')) {
+      closeRatingModal();
+    }
+  });
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Check authentication via cookies
   if (!(await utils.checkAuth())) {
     utils.redirect('login.html');
     return;
@@ -66,10 +50,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  // Setup dynamic event listeners
+  setupDynamicEventListeners();
+
   const searchBtn = document.getElementById('search-btn');
   const searchInput = document.getElementById('search-produce');
 
-  // Search produce by ID
   searchBtn.addEventListener('click', async () => {
     const produceId = searchInput.value;
     if (!produceId) {
@@ -80,7 +66,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     await viewProduceDetails(produceId);
   });
 
-  // Allow search on Enter key
   searchInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
       searchBtn.click();
@@ -94,27 +79,29 @@ async function viewProduceDetails(produceId) {
   detailsContainer.innerHTML = '<p style="color: var(--text-secondary);">Loading produce details...</p>';
 
   try {
-    // Initialize Web3 if needed
-    if (!contract) {
-      const initialized = await initWeb3();
-      if (!initialized) {
-        throw new Error('Please connect your wallet first');
-      }
+    await centralizedWallet.waitForReady();
+    
+    if (!centralizedWallet.isWalletConnected()) {
+      utils.showAlert('Please connect your wallet to view details', 'error');
+      detailsContainer.innerHTML = '<p style="color: var(--error);">Please connect your wallet to view produce details.</p>';
+      return;
     }
 
-    // Fetch produce details from blockchain
+    const contract = centralizedWallet.getContract(CONTRACT_ABI);
+    if (!contract) {
+      throw new Error('Unable to connect to smart contract');
+    }
+
     const details = await contract.getProduceDetails(produceId);
     
-    const priceInEth = ethers.formatEther(details[5]);
+    const priceInEth = window.ethers.formatEther(details[5]);
     const date = new Date(Number(details[8]) * 1000);
     
-    // Get reviews for this produce
     const reviews = getProduceReviews(produceId);
     const averageRating = reviews.length > 0 
       ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
       : 0;
 
-    // Display produce details with reviews
     detailsContainer.innerHTML = `
       <div class="card" style="background-color: var(--bg-dark); border: 2px solid var(--border-color);">
         <h3 style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--primary-color);">${details[1]}</h3>
@@ -151,9 +138,10 @@ async function viewProduceDetails(produceId) {
 
         ${details[4] !== 'Sold' ? `
           <button 
-            class="btn btn-primary mt-3" 
+            class="btn btn-primary mt-3 buy-produce-btn" 
             style="width: 100%;"
-            onclick="buyProduce('${produceId}', '${details[5].toString()}')"
+            data-produce-id="${produceId}"
+            data-price-in-wei="${details[5].toString()}"
           >
             Purchase for ${priceInEth} ETH
           </button>
@@ -167,7 +155,6 @@ async function viewProduceDetails(produceId) {
       ${displayReviews(reviews)}
     `;
 
-    // Load sale history
     await loadSaleHistory(produceId);
   } catch (error) {
     console.error('Error fetching produce details:', error);
@@ -182,6 +169,16 @@ async function viewProduceDetails(produceId) {
 // Purchase produce
 async function buyProduce(produceId, priceInWei) {
   try {
+    if (!centralizedWallet.isWalletConnected()) {
+      utils.showAlert('Please connect your wallet first', 'error');
+      return;
+    }
+
+    const contract = centralizedWallet.getContract(CONTRACT_ABI);
+    if (!contract) {
+      throw new Error('Unable to connect to smart contract');
+    }
+
     const tx = await contract.buyProduce(produceId, {
       value: priceInWei
     });
@@ -191,15 +188,84 @@ async function buyProduce(produceId, priceInWei) {
     await tx.wait();
     utils.showAlert('Purchase successful!', 'success');
     
-    // Show rating modal after successful purchase
     showRatingModal(produceId);
-    
-    // Refresh details
     await viewProduceDetails(produceId);
   } catch (error) {
     console.error('Purchase error:', error);
     utils.showAlert(error.message || 'Purchase failed. Please try again.', 'error');
   }
+}
+
+// Set rating stars
+window.setRating = function(rating) {
+  const stars = document.querySelectorAll('.star');
+  stars.forEach((star, index) => {
+    if (index < rating) {
+      star.style.color = '#ffd700';
+      star.dataset.selected = 'true';
+    } else {
+      star.style.color = '#ddd';
+      star.dataset.selected = 'false';
+    }
+  });
+  
+  document.getElementById('rating-modal').dataset.rating = rating;
+}
+
+// Submit review
+window.submitReview = function(produceId) {
+  const modal = document.getElementById('rating-modal');
+  const rating = parseInt(modal.dataset.rating || '0');
+  const reviewText = document.getElementById('review-text').value.trim();
+  
+  if (rating === 0) {
+    utils.showAlert('Please select a rating', 'warning');
+    return;
+  }
+  
+  const user = utils.getUser();
+  if (!user) {
+    utils.showAlert('Please login to submit review', 'error');
+    return;
+  }
+  
+  const review = {
+    id: Date.now().toString(),
+    produceId: produceId,
+    customerName: user.fullName || user.username,
+    customerAddress: centralizedWallet.getAddress() || 'Anonymous',
+    rating: rating,
+    review: reviewText,
+    timestamp: new Date().toISOString(),
+    verified: true
+  };
+  
+  saveReview(review);
+  utils.showAlert('Thank you for your review!', 'success');
+  closeRatingModal();
+}
+
+window.closeRatingModal = function() {
+  const modal = document.getElementById('rating-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+function saveReview(review) {
+  const existingReviews = getReviews();
+  existingReviews.push(review);
+  localStorage.setItem('produce_reviews', JSON.stringify(existingReviews));
+}
+
+function getReviews() {
+  const saved = localStorage.getItem('produce_reviews');
+  return saved ? JSON.parse(saved) : [];
+}
+
+function getProduceReviews(produceId) {
+  const allReviews = getReviews();
+  return allReviews.filter(review => review.produceId === produceId);
 }
 
 // Show rating and review modal
@@ -209,7 +275,7 @@ function showRatingModal(produceId) {
       <div class="modal-content" style="max-width: 500px;">
         <div class="modal-header">
           <h2 class="modal-title">Rate Your Purchase</h2>
-          <button onclick="closeRatingModal()" class="close-btn">×</button>
+          <button class="close-btn close-rating-modal">×</button>
         </div>
         
         <div style="padding: 1.5rem;">
@@ -221,7 +287,7 @@ function showRatingModal(produceId) {
             <label class="form-label">Rating (1-5 stars)</label>
             <div class="star-rating" style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
               ${[1,2,3,4,5].map(i => `
-                <span class="star" data-rating="${i}" onclick="setRating(${i})" 
+                <span class="star" data-rating="${i}" 
                       style="font-size: 2rem; cursor: pointer; color: #ddd;">⭐</span>
               `).join('')}
             </div>
@@ -239,10 +305,10 @@ function showRatingModal(produceId) {
           </div>
           
           <div style="display: flex; gap: 1rem;">
-            <button onclick="submitReview('${produceId}')" class="btn btn-primary" style="flex: 1;">
+            <button id="submit-review-btn" class="btn btn-primary" style="flex: 1;" data-produce-id="${produceId}">
               Submit Review
             </button>
-            <button onclick="closeRatingModal()" class="btn btn-outline" style="flex: 1;">
+            <button class="btn btn-outline close-rating-modal" style="flex: 1;">
               Skip for Now
             </button>
           </div>
@@ -254,90 +320,12 @@ function showRatingModal(produceId) {
   document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
 
-// Set rating stars
-window.setRating = function(rating) {
-  const stars = document.querySelectorAll('.star');
-  stars.forEach((star, index) => {
-    if (index < rating) {
-      star.style.color = '#ffd700';
-      star.dataset.selected = 'true';
-    } else {
-      star.style.color = '#ddd';
-      star.dataset.selected = 'false';
-    }
-  });
-  
-  // Store selected rating
-  document.getElementById('rating-modal').dataset.rating = rating;
-}
-
-// Submit review
-window.submitReview = function(produceId) {
-  const modal = document.getElementById('rating-modal');
-  const rating = parseInt(modal.dataset.rating || '0');
-  const reviewText = document.getElementById('review-text').value.trim();
-  
-  if (rating === 0) {
-    utils.showAlert('Please select a rating', 'warning');
-    return;
-  }
-  
-  // Get user info
-  const user = utils.getUser();
-  if (!user) {
-    utils.showAlert('Please login to submit review', 'error');
-    return;
-  }
-  
-  // Create review object
-  const review = {
-    id: Date.now().toString(),
-    produceId: produceId,
-    customerName: user.fullName || user.username,
-    customerAddress: userAddress || 'Anonymous',
-    rating: rating,
-    review: reviewText,
-    timestamp: new Date().toISOString(),
-    verified: true // Since they purchased it
-  };
-  
-  // Save review to localStorage (can be moved to backend later)
-  saveReview(review);
-  
-  utils.showAlert('Thank you for your review!', 'success');
-  closeRatingModal();
-}
-
-// Close rating modal
-window.closeRatingModal = function() {
-  const modal = document.getElementById('rating-modal');
-  if (modal) {
-    modal.remove();
-  }
-}
-
-// Save review to localStorage
-function saveReview(review) {
-  const existingReviews = getReviews();
-  existingReviews.push(review);
-  localStorage.setItem('produce_reviews', JSON.stringify(existingReviews));
-}
-
-// Get all reviews from localStorage
-function getReviews() {
-  const saved = localStorage.getItem('produce_reviews');
-  return saved ? JSON.parse(saved) : [];
-}
-
-// Get reviews for specific produce
-function getProduceReviews(produceId) {
-  const allReviews = getReviews();
-  return allReviews.filter(review => review.produceId === produceId);
-}
-
 // Load sale history for a produce
 async function loadSaleHistory(produceId) {
   try {
+    const contract = centralizedWallet.getContract(CONTRACT_ABI);
+    if (!contract) return;
+
     const history = await contract.getSaleHistory(produceId);
     
     if (history.length === 0) {
@@ -351,7 +339,7 @@ async function loadSaleHistory(produceId) {
     }
 
     const historyHTML = history.map(sale => {
-      const priceInEth = ethers.formatEther(sale[3]);
+      const priceInEth = window.ethers.formatEther(sale[3]);
       const date = new Date(Number(sale[4]) * 1000);
       return `
         <div style="padding: 0.75rem; background-color: rgba(0,0,0,0.2); border-radius: 0.375rem; margin-bottom: 0.5rem;">
@@ -422,5 +410,4 @@ function displayReviews(reviews) {
   `;
 }
 
-// Make buyProduce available globally
 window.buyProduce = buyProduce;

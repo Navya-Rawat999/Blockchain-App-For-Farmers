@@ -112,6 +112,146 @@
   <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js" type="application/javascript"></script>
   <script type="module" src="../js/utils.js"></script>
   <script type="module" src="../js/navbar.js"></script>
-  <script type="module" src="../js/wallet.js"></script>
+  <script type="module">
+    // Import and use centralized wallet
+    import centralizedWallet from '../js/wallet.js';
+    
+    // Wait for wallet to be ready and check connection
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        await centralizedWallet.waitForReady();
+        
+        if (centralizedWallet.isWalletConnected()) {
+          // Already connected, update UI
+          await updateWalletUI(true);
+        } else {
+          // Not connected, show connection interface
+          await updateWalletUI(false);
+        }
+      } catch (error) {
+        console.error('Wallet initialization error:', error);
+        showErrorMessage('Failed to initialize wallet service: ' + error.message);
+      }
+    });
+    
+    // Update UI based on connection status
+    async function updateWalletUI(connected) {
+      const disconnectedDiv = document.querySelector('.wallet-disconnected');
+      const connectedDiv = document.querySelector('.wallet-connected');
+
+      if (connected && centralizedWallet.getAddress()) {
+        disconnectedDiv.style.display = 'none';
+        connectedDiv.style.display = 'block';
+
+        // Update address
+        const addressElement = document.querySelector('.wallet-address');
+        if (addressElement) {
+          addressElement.textContent = centralizedWallet.getAddress();
+        }
+
+        // Get and display network
+        try {
+          const provider = centralizedWallet.getProvider();
+          const network = await provider.getNetwork();
+          const networkName = centralizedWallet.getNetworkName(Number(network.chainId));
+          const networkElement = document.querySelector('.wallet-network');
+          if (networkElement) {
+            networkElement.textContent = networkName;
+          }
+        } catch (error) {
+          console.error('Error getting network:', error);
+        }
+
+        // Get and display balance
+        try {
+          const provider = centralizedWallet.getProvider();
+          const balance = await provider.getBalance(centralizedWallet.getAddress());
+          const balanceInEth = window.ethers.formatEther(balance);
+          const balanceElement = document.getElementById('wallet-balance-display');
+          if (balanceElement) {
+            balanceElement.textContent = parseFloat(balanceInEth).toFixed(4);
+          }
+        } catch (error) {
+          console.error('Error getting balance:', error);
+        }
+      } else {
+        disconnectedDiv.style.display = 'block';
+        connectedDiv.style.display = 'none';
+      }
+    }
+    
+    // Connect wallet function
+    window.connectWallet = async () => {
+      try {
+        const result = await centralizedWallet.connectWallet();
+        await updateWalletUI(true);
+        showAlert('Wallet connected successfully!', 'success');
+      } catch (error) {
+        console.error('Connection error:', error);
+        showAlert('Failed to connect wallet: ' + error.message, 'error');
+      }
+    };
+    
+    // Disconnect wallet function
+    window.disconnectWallet = async () => {
+      try {
+        await centralizedWallet.disconnectWallet();
+        await updateWalletUI(false);
+        showAlert('Wallet disconnected successfully!', 'success');
+      } catch (error) {
+        console.error('Disconnection error:', error);
+        showAlert('Failed to disconnect wallet: ' + error.message, 'error');
+      }
+    };
+    
+    // Copy address function
+    window.copyAddress = () => {
+      centralizedWallet.copyAddress();
+    };
+    
+    // Update balance function
+    window.updateBalance = async () => {
+      try {
+        const balance = await centralizedWallet.updateBalance();
+        if (balance !== null) {
+          document.getElementById('wallet-balance-display').textContent = parseFloat(balance).toFixed(4);
+          showAlert('Balance updated!', 'success');
+        }
+      } catch (error) {
+        console.error('Balance update error:', error);
+        showAlert('Failed to update balance', 'error');
+      }
+    };
+    
+    // Helper functions
+    function showAlert(message, type) {
+      const alertContainer = document.getElementById('alert-container');
+      const alertClass = type === 'success' ? 'alert-success' : type === 'error' ? 'alert-error' : 'alert-warning';
+      
+      alertContainer.innerHTML = `
+        <div class="alert ${alertClass}" style="margin-bottom: 1rem;">
+          ${message}
+        </div>
+      `;
+      
+      setTimeout(() => {
+        alertContainer.innerHTML = '';
+      }, 5000);
+    }
+    
+    function showErrorMessage(message) {
+      const container = document.querySelector('.container');
+      container.innerHTML = `
+        <div style="text-align: center; padding: 2rem;">
+          <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--error);">⚠️</div>
+          <h2 style="color: var(--error);">Wallet Service Error</h2>
+          <p style="margin-bottom: 1rem;">${message}</p>
+          <button onclick="window.location.reload()" class="btn btn-primary">
+            🔄 Refresh Page
+          </button>
+        </div>
+      `;
+    }
+  </script>
 </body>
 </html>

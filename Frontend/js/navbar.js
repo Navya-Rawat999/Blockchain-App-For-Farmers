@@ -12,7 +12,7 @@ async function initNavbar() {
       <a href="farmer.html" class="btn btn-ghost">🧑‍🌾 Farmer</a>
       <a href="customer.html" class="btn btn-ghost">👤 Customer</a>
       <a href="profile.html" class="btn btn-ghost">⚙️ Profile</a>
-      <a href="wallet.html" class="btn btn-ghost">💼 Wallet</a>
+      <a href="wallet.html" class="btn btn-primary">🦊 Wallet</a>
       <button id="logout-btn" class="btn btn-outline btn-sm">Logout</button>
     ` : `
       <a href="marketplace.html" class="btn btn-ghost">🛒 Marketplace</a>
@@ -21,7 +21,6 @@ async function initNavbar() {
       <a href="customer.html" class="btn btn-ghost">👤 Customer</a>
       <a href="login.html" class="btn btn-outline btn-sm">Login</a>
       <a href="register.html" class="btn btn-outline btn-sm">Register</a>
-      <a href="wallet.html" class="btn btn-primary">Connect Wallet</a>
     `;
 
   const navbarHTML = `

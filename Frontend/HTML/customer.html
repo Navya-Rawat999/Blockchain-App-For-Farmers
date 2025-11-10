@@ -9,54 +9,53 @@
 </head>
 <body>
   <!-- Navigation -->
-  <div id="navbar"></div>
+  <nav id="navbar"></nav>
 
-  <!-- Main Content -->
   <main class="main-content">
-  <div class="container padding-x-1rem">
-  <h1 class="customer-title">Customer Dashboard</h1>
-
-      <div id="alert-container"></div>
-
-      <!-- Scan QR Code Section -->
-      <div class="card">
-  <h2 class="section-title">Scan QR Code</h2>
-  <p class="text-secondary mb-1rem">
-          Scan a produce QR code to view its complete history and verify authenticity.
-        </p>
-        <a href="/scan.html" class="btn btn-primary">Open Scanner</a>
+    <div class="container">
+      <h1 class="section-title">🛒 Customer Dashboard</h1>
+      
+      <!-- Wallet Connection Status -->
+      <div class="card mb-2">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h3 style="margin: 0;">🦊 Wallet Status</h3>
+            <p style="margin: 0.5rem 0; color: var(--text-secondary);">Connect your wallet to purchase produce</p>
+          </div>
+          <button class="btn btn-primary connect-wallet-btn" onclick="connectWallet()">
+            Connect MetaMask
+          </button>
+        </div>
       </div>
 
-      <!-- Browse Available Produce -->
-      <div class="card">
-  <h2 class="section-title">Browse Available Produce</h2>
-        
+      <!-- Search Produce -->
+      <div class="card mb-2">
+        <h2 class="section-title">🔍 Search Produce</h2>
         <div class="form-group">
-          <label class="form-label" for="search-produce">Search by Produce ID</label>
-          <div class="flex gap-0-5rem">
+          <label class="form-label" for="search-produce">Enter Produce ID</label>
+          <div style="display: flex; gap: 0.5rem;">
             <input 
               type="number" 
               id="search-produce" 
               class="form-input" 
-              placeholder="Enter produce ID"
+              placeholder="Enter produce ID to view details..."
+              style="flex: 1;"
               min="1"
             >
-            <button id="search-btn" class="btn btn-primary nowrap">
-              View Details
+            <button id="search-btn" class="btn btn-primary">
+              Search
             </button>
           </div>
-        </div>
-
-  <div id="produce-details" class="mt-1-5rem">
-          <!-- Produce details will be displayed here -->
+          <span class="form-help">Enter the ID number of the produce you want to view or purchase.</span>
         </div>
       </div>
 
-      <!-- Purchase History -->
-      <div class="card">
-  <h2 class="section-title">My Purchase History</h2>
-        <div id="purchase-history">
-          <p class="text-secondary">Your purchase history will appear here.</p>
+      <!-- Produce Details -->
+      <div id="produce-details">
+        <div class="card" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+          <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+          <h3>Search for Produce</h3>
+          <p>Enter a produce ID above to view details and make a purchase.</p>
         </div>
       </div>
     </div>

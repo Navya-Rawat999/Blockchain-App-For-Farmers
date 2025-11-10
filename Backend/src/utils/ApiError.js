@@ -10,7 +10,7 @@ class ApiError extends Error {
     this.data = null
     this.message = message
     this.success = false
-    this.erros = errors
+    this.errors = errors // Fixed typo: was 'erros'
 
     if (stack){
       this.stack = stack

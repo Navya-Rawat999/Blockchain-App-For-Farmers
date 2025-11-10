@@ -56,7 +56,7 @@
               placeholder="0x... (Enter your MetaMask wallet address)"
               style="flex: 1;"
             >
-            <button id="save-wallet-btn" class="btn btn-outline" onclick="saveWalletAddress()">
+            <button id="save-wallet-btn" class="btn btn-outline">
               Save
             </button>
           </div>
@@ -67,17 +67,17 @@
         <div class="info-row">
           <span class="info-label">
             Current Wallet Address
-            <span class="copy-btn" onclick="copyWalletAddress()" title="Copy address">📋</span>
+            <span class="copy-btn" title="Copy address">📋</span>
           </span>
           <div class="wallet-address" id="wallet-address">Not set</div>
         </div>
 
         <!-- MetaMask Connection -->
         <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-          <button id="connect-wallet-btn" class="btn btn-primary" onclick="connectWallet()">
+          <button id="connect-wallet-btn" class="btn btn-primary">
             Connect MetaMask
           </button>
-          <button id="disconnect-wallet-btn" class="btn btn-outline" onclick="disconnectWallet()" style="display: none;">
+          <button id="disconnect-wallet-btn" class="btn btn-outline" style="display: none;">
             Disconnect
           </button>
         </div>
@@ -126,7 +126,7 @@
 
         <!-- Account Actions -->
         <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-          <button onclick="testLogout()" class="btn btn-outline w-100">
+          <button id="logout-profile-btn" class="btn btn-outline w-100">
             🚪 Logout
           </button>
         </div>
@@ -136,7 +136,7 @@
       <div class="card">
         <div class="flex space-between align-center mb-1rem">
           <h2 class="section-title" style="margin: 0;">📜 Transaction History</h2>
-          <button class="btn btn-outline" onclick="refreshTransactions()">
+          <button id="refresh-transactions-btn" class="btn btn-outline">
             🔄 Refresh
           </button>
         </div>
@@ -159,29 +159,5 @@
   <script type="module" src="../js/utils.js"></script>
   <script type="module" src="../js/navbar.js"></script>
   <script type="module" src="../js/profile.js"></script>
-  
-  <script>
-    // Test logout function
-    async function testLogout() {
-      try {
-        console.log('Testing logout...');
-        
-        // Try navbar logout first
-        if (window.handleLogout) {
-          await window.handleLogout();
-        } else {
-          // Fallback to utils logout
-          const { default: utils } = await import('../js/utils.js');
-          await utils.logout();
-        }
-      } catch (error) {
-        console.error('Logout test error:', error);
-        alert('Logout error: ' + error.message);
-      }
-    }
-    
-    // Make it globally available
-    window.testLogout = testLogout;
-  </script>
 </body>
 </html>

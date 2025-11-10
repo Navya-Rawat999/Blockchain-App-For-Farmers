@@ -1,9 +1,7 @@
 import utils from '../js/utils.js';
+import centralizedWallet from '../js/wallet.js';
 
 // Marketplace - Browse and purchase produce
-let contract = null;
-let provider = null;
-let signer = null;
 let allProducts = [];
 let cart = [];
 
@@ -16,22 +14,15 @@ const CONTRACT_ABI = [
   "function getProduceIdsByName(string memory _name) public view returns (uint256[] memory)"
 ];
 
-const CONTRACT_ADDRESS = '0x742d35Cc6135C4Ad4C006C8C704aC8DC7CE18F72'; // Replace with your deployed contract address
-
-// Initialize Web3 connection
+// Initialize Web3 connection using centralized wallet
 async function initWeb3() {
-  if (!window.walletService.isConnected) {
-    await window.walletService.connectWallet();
+  await centralizedWallet.waitForReady();
+  
+  if (!centralizedWallet.isWalletConnected()) {
+    await centralizedWallet.connectWallet();
   }
   
-  if (window.walletService.isConnected) {
-    provider = window.walletService.provider;
-    signer = window.walletService.signer;
-    contract = window.walletService.getContract(CONTRACT_ABI);
-    return contract !== null;
-  }
-  
-  return false;
+  return centralizedWallet.isWalletConnected();
 }
 
 // Load cart from localStorage
@@ -135,8 +126,8 @@ function updateCartModal() {
           </div>
         </div>
         <button 
-          onclick="removeFromCart('${item.id}')" 
-          class="btn btn-ghost"
+          data-product-id="${item.id}"
+          class="btn btn-ghost remove-from-cart-btn"
           style="padding: 0.5rem; color: var(--error);"
         >
           🗑️
@@ -156,12 +147,10 @@ async function checkout() {
     return;
   }
 
-  if (!contract) {
-    const initialized = await initWeb3();
-    if (!initialized) {
-      utils.showAlert('Please connect your wallet first', 'error');
-      return;
-    }
+  const initialized = await initWeb3();
+  if (!initialized) {
+    utils.showAlert('Please connect your wallet first', 'error');
+    return;
   }
 
   const checkoutBtn = document.getElementById('checkout-btn');
@@ -169,6 +158,11 @@ async function checkout() {
   checkoutBtn.innerHTML = '<span class="spinner"></span> Processing...';
 
   try {
+    const contract = centralizedWallet.getContract(CONTRACT_ABI);
+    if (!contract) {
+      throw new Error('Unable to connect to smart contract');
+    }
+
     // Process each item in cart
     for (const item of cart) {
       utils.showAlert(`Purchasing ${item.name}...`, 'warning');
@@ -238,12 +232,13 @@ async function loadProducts() {
 
 // Sync database with blockchain (background process)
 async function syncWithBlockchain() {
-  if (!contract) {
-    const initialized = await initWeb3();
-    if (!initialized) return;
-  }
+  const initialized = await initWeb3();
+  if (!initialized) return;
 
   try {
+    const contract = centralizedWallet.getContract(CONTRACT_ABI);
+    if (!contract) return;
+
     // Check blockchain status for each product
     for (const product of allProducts) {
       try {
@@ -280,6 +275,49 @@ function getProduceReviews(produceId) {
   const saved = localStorage.getItem('produce_reviews');
   const allReviews = saved ? JSON.parse(saved) : [];
   return allReviews.filter(review => review.produceId === produceId);
+}
+
+// Setup event listeners for dynamically created buttons
+function setupDynamicEventListeners() {
+  document.addEventListener('click', (e) => {
+    // Handle add to cart buttons
+    if (e.target.classList.contains('add-to-cart-btn')) {
+      const productData = JSON.parse(e.target.dataset.product);
+      addToCart(productData);
+    }
+    
+    // Handle view product details buttons
+    if (e.target.classList.contains('view-product-btn')) {
+      const productId = e.target.dataset.productId;
+      viewProductDetails(productId);
+    }
+    
+    // Handle remove from cart buttons
+    if (e.target.classList.contains('remove-from-cart-btn')) {
+      const productId = e.target.dataset.productId;
+      removeFromCart(productId);
+    }
+    
+    // Handle cart badge click
+    if (e.target.id === 'cart-badge' || e.target.closest('#cart-badge')) {
+      openCart();
+    }
+    
+    // Handle close cart
+    if (e.target.classList.contains('close-cart-btn')) {
+      closeCart();
+    }
+    
+    // Handle checkout
+    if (e.target.id === 'checkout-btn') {
+      checkout();
+    }
+    
+    // Handle clear cart
+    if (e.target.classList.contains('clear-cart-btn')) {
+      clearCart();
+    }
+  });
 }
 
 // Display products in grid
@@ -338,16 +376,16 @@ function displayProducts(products) {
           </div>
           <div style="display: flex; gap: 0.5rem;">
             <button 
-              onclick="viewProductDetails('${product.id}')" 
-              class="btn btn-outline"
+              class="btn btn-outline view-product-btn"
+              data-product-id="${product.id}"
               style="padding: 0.5rem 0.75rem;"
             >
               View
             </button>
             ${isAvailable ? `
               <button 
-                onclick='addToCart(${JSON.stringify(product).replace(/'/g, "&apos;")})' 
-                class="btn btn-primary"
+                class="btn btn-primary add-to-cart-btn"
+                data-product='${JSON.stringify(product).replace(/'/g, "&apos;")}'
                 style="padding: 0.5rem 0.75rem;"
               >
                 🛒 Add
@@ -409,30 +447,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  // Setup dynamic event listeners
+  setupDynamicEventListeners();
+
   // Load cart from storage
   loadCart();
 
   // Load products
   await loadProducts();
 
-  // Setup event listeners
-  document.getElementById('search-input').addEventListener('input', filterProducts);
-  document.getElementById('status-filter').addEventListener('change', filterProducts);
-  document.getElementById('refresh-btn').addEventListener('click', loadProducts);
+  // Setup event listeners for search and filter
+  const searchInput = document.getElementById('search-input');
+  const statusFilter = document.getElementById('status-filter');
+  const refreshBtn = document.getElementById('refresh-btn');
+
+  if (searchInput) {
+    searchInput.addEventListener('input', filterProducts);
+  }
+  
+  if (statusFilter) {
+    statusFilter.addEventListener('change', filterProducts);
+  }
+  
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', loadProducts);
+  }
 
   // Close modal when clicking outside
-  document.getElementById('cart-modal').addEventListener('click', (e) => {
-    if (e.target.id === 'cart-modal') {
-      closeCart();
-    }
-  });
+  const cartModal = document.getElementById('cart-modal');
+  if (cartModal) {
+    cartModal.addEventListener('click', (e) => {
+      if (e.target.id === 'cart-modal') {
+        closeCart();
+      }
+    });
+  }
 });
 
-// Make functions globally available
-window.addToCart = addToCart;
-window.removeFromCart = removeFromCart;
-window.clearCart = clearCart;
-window.openCart = openCart;
-window.closeCart = closeCart;
-window.checkout = checkout;
-window.viewProductDetails = viewProductDetails;
+// Don't export global functions

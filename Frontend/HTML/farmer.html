@@ -9,92 +9,66 @@
 </head>
 <body>
   <!-- Navigation -->
-  <div id="navbar"></div>
+  <nav id="navbar"></nav>
 
-  <!-- Main Content -->
   <main class="main-content">
-  <div class="container padding-x-1rem">
-  <h1 class="farmer-title">Farmer Dashboard</h1>
-
-      <div id="alert-container"></div>
-
+    <div class="container">
+      <h1 class="section-title">🧑‍🌾 Farmer Dashboard</h1>
+      
       <!-- Wallet Connection Status -->
-      <div class="card" style="margin-bottom: 1rem; padding: 1rem; background: linear-gradient(135deg, #10b981, #059669);">
-        <div style="display: flex; align-items: center; gap: 1rem;">
-          <div style="font-size: 2rem;">🦊</div>
+      <div class="card mb-2">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <h3 style="margin: 0; color: white;">MetaMask Connection Required</h3>
-            <p style="margin: 0.5rem 0 0 0; color: rgba(255,255,255,0.9); font-size: 0.9rem;">
-              Connect your MetaMask wallet to register and manage produce on the blockchain.
-            </p>
+            <h3 style="margin: 0;">🦊 Wallet Status</h3>
+            <p style="margin: 0.5rem 0; color: var(--text-secondary);">Connect your wallet to register produce</p>
           </div>
+          <button class="btn btn-primary connect-wallet-btn" onclick="connectWallet()">
+            Connect MetaMask
+          </button>
         </div>
       </div>
 
-      <!-- Register New Produce Section -->
-      <div class="card">
-  <h2 class="section-title">Register New Produce</h2>
-        
+      <!-- Register New Produce -->
+      <div class="card mb-2">
+        <h2 class="section-title">📝 Register New Produce</h2>
         <form id="register-produce-form">
-          <div class="form-group">
-            <label class="form-label" for="produce-name">Produce Name</label>
-            <input 
-              type="text" 
-              id="produce-name" 
-              class="form-input" 
-              placeholder="e.g., Organic Tomatoes"
-              required
-            >
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="produce-name">Produce Name</label>
+              <input type="text" id="produce-name" class="form-input" required 
+                     placeholder="e.g., Organic Tomatoes">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="origin-farm">Origin Farm</label>
+              <input type="text" id="origin-farm" class="form-input" required 
+                     placeholder="e.g., Green Valley Farm">
+            </div>
           </div>
-
-          <div class="form-group">
-            <label class="form-label" for="origin-farm">Origin Farm</label>
-            <input 
-              type="text" 
-              id="origin-farm" 
-              class="form-input" 
-              placeholder="e.g., Green Valley Farm"
-              required
-            >
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="price">Price (in ETH)</label>
+              <input type="number" id="price" class="form-input" required 
+                     placeholder="e.g., 0.01" step="0.001" min="0">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="qr-code">QR Code Data</label>
+              <input type="text" id="qr-code" class="form-input" required 
+                     placeholder="e.g., FARM001-TOM-2025">
+            </div>
           </div>
-
-          <div class="form-group">
-            <label class="form-label" for="price">Price (ETH)</label>
-            <input 
-              type="number" 
-              id="price" 
-              class="form-input" 
-              placeholder="0.001"
-              step="0.0001"
-              min="0.0001"
-              required
-            >
-            <span class="form-help">Enter the price in ETH (Ethereum). Example: 0.001 ETH</span>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="qr-code">QR Code Data</label>
-            <input 
-              type="text" 
-              id="qr-code" 
-              class="form-input" 
-              placeholder="Unique identifier or URL"
-              required
-            >
-            <span class="form-help">This will be embedded in the QR code for customer scanning.</span>
-          </div>
-
-          <button type="submit" class="btn btn-primary" id="register-btn">
-            Register Produce
+          
+          <button type="submit" id="register-btn" class="btn btn-primary w-100">
+            Register Produce on Blockchain
           </button>
         </form>
       </div>
 
-      <!-- My Produce List -->
+      <!-- My Registered Produce -->
       <div class="card">
-  <h2 class="section-title">My Registered Produce</h2>
+        <h2 class="section-title">📦 My Registered Produce</h2>
         <div id="produce-list">
-          <p class="text-secondary">Loading your produce...</p>
+          <p style="color: var(--text-secondary); text-align: center;">Loading your produce...</p>
         </div>
       </div>
     </div>

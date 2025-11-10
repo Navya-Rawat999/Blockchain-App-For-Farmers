@@ -1,11 +1,7 @@
 import utils from '../js/utils.js';
+import centralizedWallet from '../js/wallet.js';
 
-// Profile page functionality
-let provider = null;
-let signer = null;
-let userAddress = null;
-
-// Contract ABI for transaction history
+// Profile page functionality using centralized wallet
 const CONTRACT_ABI = [
   "function getProduceDetails(uint256 _id) public view returns (uint256 id, string memory name, address originalFarmer, address currentSeller, string memory currentStatus, uint256 priceInWei, string memory originFarm, string memory qrCode, uint256 registrationTimestamp)",
   "function getSaleHistory(uint256 _id) public view returns (tuple(uint256 ProduceId, address buyer, address seller, uint256 pricePaidInWei, uint256 SaleTimeStamp)[] memory)",
@@ -14,53 +10,24 @@ const CONTRACT_ABI = [
   "event ProduceSold(uint256 indexed id, address indexed buyer, address indexed seller, uint256 pricePaidInWei)"
 ];
 
-const CONTRACT_ADDRESS = '0x742d35Cc6135C4Ad4C006C8C704aC8DC7CE18F72';
-
-// Connect wallet directly without wallet service
+// Connect wallet using centralized wallet
 async function connectWallet() {
-  if (typeof window.ethereum === 'undefined') {
-    utils.showAlert('MetaMask is not installed. Please install it from metamask.io', 'error');
-    return;
-  }
-
-  // Wait for ethers to be available
-  if (typeof window.ethers === 'undefined') {
-    utils.showAlert('Loading wallet service...', 'warning');
-    let attempts = 0;
-    while (typeof window.ethers === 'undefined' && attempts < 50) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      attempts++;
-    }
-    
-    if (typeof window.ethers === 'undefined') {
-      utils.showAlert('Failed to load wallet service. Please refresh the page.', 'error');
-      return;
-    }
-  }
-
   try {
-    // Request account access
-    await window.ethereum.request({ method: 'eth_requestAccounts' });
+    await centralizedWallet.waitForReady();
+    const result = await centralizedWallet.connectWallet();
     
-    // Set up provider and signer
-    provider = new window.ethers.BrowserProvider(window.ethereum);
-    signer = await provider.getSigner();
-    userAddress = await signer.getAddress();
-
-    // Update UI elements
-    document.getElementById('wallet-address').textContent = userAddress;
+    // Update UI elements specific to profile page
+    document.getElementById('wallet-address').textContent = result.address;
     document.getElementById('connect-wallet-btn').textContent = 'Wallet Connected';
     document.getElementById('connect-wallet-btn').disabled = true;
     document.getElementById('disconnect-wallet-btn').style.display = 'inline-block';
     document.getElementById('metamask-info').style.display = 'block';
     
-    // Save to localStorage for persistence
-    localStorage.setItem('saved_wallet_address', userAddress);
+    localStorage.setItem('saved_wallet_address', result.address);
     
     await loadWalletInfo();
     utils.showAlert('Wallet connected successfully!', 'success');
     
-    // Load stats and transactions
     await loadUserStats();
     await loadTransactions();
   } catch (error) {
@@ -69,26 +36,16 @@ async function connectWallet() {
   }
 }
 
-// Disconnect wallet
+// Disconnect wallet using centralized wallet
 async function disconnectWallet() {
   try {
-    // Call backend API to disconnect wallet
-    await utils.apiCall('/wallet/disconnect', {
-      method: 'POST'
-    });
-
-    // Reset local state
-    provider = null;
-    signer = null;
-    userAddress = null;
+    await centralizedWallet.disconnectWallet();
     
-    // Update UI
     document.getElementById('connect-wallet-btn').textContent = 'Connect MetaMask';
     document.getElementById('connect-wallet-btn').disabled = false;
     document.getElementById('disconnect-wallet-btn').style.display = 'none';
     document.getElementById('metamask-info').style.display = 'none';
     
-    // Keep saved address from manual input or clear it
     const savedAddress = localStorage.getItem('saved_wallet_address');
     if (!savedAddress) {
       document.getElementById('wallet-address').textContent = 'Not set';
@@ -97,48 +54,100 @@ async function disconnectWallet() {
     utils.showAlert('Wallet disconnected successfully!', 'success');
   } catch (error) {
     console.error('Wallet disconnection error:', error);
-    // Still update UI even if API call fails
-    provider = null;
-    signer = null;
-    userAddress = null;
     utils.showAlert('Wallet disconnected', 'success');
   }
 }
 
-// Load wallet information
+// Save wallet address manually
+function saveWalletAddress() {
+  const addressInput = document.getElementById('manual-wallet-address');
+  const address = addressInput.value.trim();
+  
+  if (!address) {
+    utils.showAlert('Please enter a wallet address', 'warning');
+    return;
+  }
+
+  // Basic validation for Ethereum address
+  if (!address.startsWith('0x') || address.length !== 42) {
+    utils.showAlert('Please enter a valid Ethereum address (starts with 0x and 42 characters long)', 'error');
+    return;
+  }
+
+  // Save to localStorage
+  localStorage.setItem('saved_wallet_address', address);
+  
+  // Update display
+  document.getElementById('wallet-address').textContent = address;
+  
+  // Clear input
+  addressInput.value = '';
+  
+  utils.showAlert('Wallet address saved successfully!', 'success');
+}
+
+// Copy wallet address to clipboard
+function copyWalletAddress() {
+  const address = document.getElementById('wallet-address').textContent;
+  if (address === 'Not set' || address === 'Not connected') {
+    utils.showAlert('No wallet address to copy', 'warning');
+    return;
+  }
+
+  navigator.clipboard.writeText(address).then(() => {
+    utils.showAlert('Address copied to clipboard!', 'success');
+  }).catch(err => {
+    console.error('Failed to copy address:', err);
+    utils.showAlert('Failed to copy address', 'error');
+  });
+}
+
+// Refresh transactions
+async function refreshTransactions() {
+  utils.showAlert('Refreshing transactions...', 'warning');
+  await loadTransactions();
+  await loadUserStats();
+  utils.showAlert('Transactions refreshed!', 'success');
+}
+
+// Test logout function
+async function testLogout() {
+  try {
+    console.log('Testing logout...');
+    
+    // Try navbar logout first
+    if (window.handleLogout) {
+      await window.handleLogout();
+    } else {
+      // Fallback to utils logout
+      await utils.logout();
+    }
+  } catch (error) {
+    console.error('Logout test error:', error);
+    alert('Logout error: ' + error.message);
+  }
+}
+
+// Load wallet information using centralized wallet
 async function loadWalletInfo() {
-  if (!provider || !userAddress) {
+  if (!centralizedWallet.isWalletConnected()) {
     return;
   }
 
   try {
-    // Get network
+    const provider = centralizedWallet.getProvider();
+    const userAddress = centralizedWallet.getAddress();
+    
     const network = await provider.getNetwork();
     document.getElementById('network-name').textContent = network.name || `Chain ID: ${network.chainId}`;
 
-    // Get balance
     const balance = await provider.getBalance(userAddress);
     const balanceInEth = window.ethers.formatEther(balance);
     document.getElementById('wallet-balance').textContent = `${parseFloat(balanceInEth).toFixed(4)} ETH`;
     
-    // Update stats
     document.getElementById('stat-balance').textContent = `${parseFloat(balanceInEth).toFixed(4)} ETH`;
 
-    // Save wallet info to backend
-    try {
-      await utils.apiCall('/wallet/connect', {
-        method: 'POST',
-        body: JSON.stringify({
-          walletAddress: userAddress,
-          networkId: Number(network.chainId),
-          networkName: network.name || `Chain ID: ${network.chainId}`,
-          balance: balanceInEth
-        })
-      });
-    } catch (backendError) {
-      console.log('Backend wallet save failed:', backendError);
-      // Continue - UI should still work
-    }
+    await centralizedWallet.saveWalletToBackend(balanceInEth);
   } catch (error) {
     console.error('Error loading wallet info:', error);
   }
@@ -183,57 +192,12 @@ function loadProfileData() {
   loadSavedWalletAddress();
 }
 
-// Save wallet address manually
-function saveWalletAddress() {
-  const addressInput = document.getElementById('manual-wallet-address');
-  const address = addressInput.value.trim();
-  
-  if (!address) {
-    utils.showAlert('Please enter a wallet address', 'warning');
-    return;
-  }
-
-  // Basic validation for Ethereum address
-  if (!address.startsWith('0x') || address.length !== 42) {
-    utils.showAlert('Please enter a valid Ethereum address (starts with 0x and 42 characters long)', 'error');
-    return;
-  }
-
-  // Save to localStorage
-  localStorage.setItem('saved_wallet_address', address);
-  
-  // Update display
-  document.getElementById('wallet-address').textContent = address;
-  
-  // Clear input
-  addressInput.value = '';
-  
-  utils.showAlert('Wallet address saved successfully!', 'success');
-}
-
 // Load saved wallet address
 function loadSavedWalletAddress() {
   const savedAddress = localStorage.getItem('saved_wallet_address');
   if (savedAddress) {
     document.getElementById('wallet-address').textContent = savedAddress;
-    userAddress = savedAddress; // Set for blockchain operations
   }
-}
-
-// Copy wallet address to clipboard
-function copyWalletAddress() {
-  const address = document.getElementById('wallet-address').textContent;
-  if (address === 'Not set' || address === 'Not connected') {
-    utils.showAlert('No wallet address to copy', 'warning');
-    return;
-  }
-
-  navigator.clipboard.writeText(address).then(() => {
-    utils.showAlert('Address copied to clipboard!', 'success');
-  }).catch(err => {
-    console.error('Failed to copy address:', err);
-    utils.showAlert('Failed to copy address', 'error');
-  });
 }
 
 // Load user statistics
@@ -266,10 +230,13 @@ async function loadUserStats() {
 
 // Load farmer-specific statistics
 async function loadFarmerStats() {
-  if (!provider || !userAddress) return {};
+  if (!centralizedWallet.isWalletConnected()) return {};
 
   try {
-    const contract = new window.ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+    const contract = centralizedWallet.getContract(CONTRACT_ABI);
+    if (!contract) return {};
+
+    const userAddress = centralizedWallet.getAddress();
     
     const nextId = await contract.nextProduceId();
     const totalItems = Number(nextId) - 1;
@@ -298,10 +265,12 @@ async function loadFarmerStats() {
       }
     }
 
+    const revenueInEth = totalRevenue > 0 ? window.ethers.formatEther(totalRevenue) : '0';
+
     return {
       registered: { value: registered, label: 'Products Registered' },
       sold: { value: sold, label: 'Products Sold' },
-      revenue: { value: `${window.ethers.formatEther(totalRevenue)} ETH`, label: 'Total Revenue' },
+      revenue: { value: `${revenueInEth} ETH`, label: 'Total Revenue' },
       available: { value: registered - sold, label: 'Available' }
     };
   } catch (error) {
@@ -312,10 +281,13 @@ async function loadFarmerStats() {
 
 // Load customer-specific statistics
 async function loadCustomerStats() {
-  if (!provider || !userAddress) return {};
+  if (!centralizedWallet.isWalletConnected()) return {};
 
   try {
-    const contract = new window.ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+    const contract = centralizedWallet.getContract(CONTRACT_ABI);
+    if (!contract) return {};
+
+    const userAddress = centralizedWallet.getAddress();
     const nextId = await contract.nextProduceId();
     const totalItems = Number(nextId) - 1;
     
@@ -352,7 +324,7 @@ async function loadTransactions() {
   const transactionsList = document.getElementById('transactions-list');
   const user = utils.getUser();
 
-  if (!provider || !userAddress) {
+  if (!centralizedWallet.isWalletConnected()) {
     transactionsList.innerHTML = '<p class="text-secondary text-center">Connect your wallet to view transaction history</p>';
     return;
   }
@@ -360,18 +332,21 @@ async function loadTransactions() {
   transactionsList.innerHTML = '<p class="text-secondary text-center">Loading transactions...</p>';
 
   try {
-    const contract = new window.ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+    const contract = centralizedWallet.getContract(CONTRACT_ABI);
+    if (!contract) {
+      throw new Error('Unable to connect to contract');
+    }
+
+    const userAddress = centralizedWallet.getAddress();
     const nextId = await contract.nextProduceId();
     const totalItems = Number(nextId) - 1;
     
     const transactions = [];
 
-    // Gather transactions
     for (let i = 1; i <= totalItems; i++) {
       try {
         const details = await contract.getProduceDetails(i);
         
-        // Check if user is the farmer
         if (user.role === 'farmer' && details[2].toLowerCase() === userAddress.toLowerCase()) {
           transactions.push({
             type: 'registration',
@@ -382,10 +357,9 @@ async function loadTransactions() {
           });
         }
 
-        // Check sale history
         const history = await contract.getSaleHistory(i);
         for (const sale of history) {
-          if (sale[1].toLowerCase() === userAddress.toLowerCase()) { // buyer
+          if (sale[1].toLowerCase() === userAddress.toLowerCase()) {
             transactions.push({
               type: 'purchase',
               productName: details[1],
@@ -394,7 +368,7 @@ async function loadTransactions() {
               price: sale[3],
               seller: sale[2]
             });
-          } else if (sale[2].toLowerCase() === userAddress.toLowerCase()) { // seller
+          } else if (sale[2].toLowerCase() === userAddress.toLowerCase()) {
             transactions.push({
               type: 'sale',
               productName: details[1],
@@ -410,10 +384,7 @@ async function loadTransactions() {
       }
     }
 
-    // Sort by timestamp (newest first)
     transactions.sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
-
-    // Update transaction count in stats
     document.getElementById('stat-transactions').textContent = transactions.length;
 
     if (transactions.length === 0) {
@@ -421,7 +392,6 @@ async function loadTransactions() {
       return;
     }
 
-    // Display transactions
     const transactionsHTML = transactions.map(tx => {
       const date = new Date(Number(tx.timestamp) * 1000);
       const priceInEth = window.ethers.formatEther(tx.price);
@@ -470,12 +440,43 @@ async function loadTransactions() {
   }
 }
 
-// Refresh transactions
-async function refreshTransactions() {
-  utils.showAlert('Refreshing transactions...', 'warning');
-  await loadTransactions();
-  await loadUserStats();
-  utils.showAlert('Transactions refreshed!', 'success');
+// Setup event listeners
+function setupEventListeners() {
+  // Connect wallet button
+  const connectBtn = document.getElementById('connect-wallet-btn');
+  if (connectBtn) {
+    connectBtn.addEventListener('click', connectWallet);
+  }
+
+  // Disconnect wallet button
+  const disconnectBtn = document.getElementById('disconnect-wallet-btn');
+  if (disconnectBtn) {
+    disconnectBtn.addEventListener('click', disconnectWallet);
+  }
+
+  // Save wallet address button
+  const saveWalletBtn = document.getElementById('save-wallet-btn');
+  if (saveWalletBtn) {
+    saveWalletBtn.addEventListener('click', saveWalletAddress);
+  }
+
+  // Copy wallet address button
+  const copyBtn = document.querySelector('.copy-btn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', copyWalletAddress);
+  }
+
+  // Refresh transactions button
+  const refreshBtn = document.getElementById('refresh-transactions-btn');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', refreshTransactions);
+  }
+
+  // Logout button
+  const logoutBtn = document.getElementById('logout-profile-btn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', testLogout);
+  }
 }
 
 // Initialize page
@@ -486,62 +487,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  // Setup event listeners
+  setupEventListeners();
+
   // Load profile data
   loadProfileData();
 
-  // Wait for ethers to load before trying to connect wallet
-  let ethersReady = false;
   try {
-    let attempts = 0;
-    while (typeof window.ethers === 'undefined' && attempts < 50) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      attempts++;
+    await centralizedWallet.waitForReady();
+    
+    if (centralizedWallet.isWalletConnected()) {
+      await loadWalletInfo();
+      await loadUserStats();
+      await loadTransactions();
+    } else {
+      document.getElementById('stat-balance').textContent = 'Connect Wallet';
     }
-    ethersReady = typeof window.ethers !== 'undefined';
   } catch (error) {
-    console.error('Error waiting for ethers:', error);
-  }
-
-  if (ethersReady) {
-    // Try to auto-connect wallet if already connected
-    if (typeof window.ethereum !== 'undefined') {
-      try {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-        if (accounts.length > 0) {
-          await connectWallet();
-        } else {
-          // Show message to connect wallet
-          document.getElementById('stat-balance').textContent = 'Connect Wallet';
-        }
-      } catch (error) {
-        console.error('Auto-connect error:', error);
-      }
-    }
-
-    // Listen for account changes
-    if (window.ethereum) {
-      window.ethereum.on('accountsChanged', async (accounts) => {
-        if (accounts.length === 0) {
-          await disconnectWallet();
-          utils.showAlert('Wallet disconnected', 'warning');
-        } else {
-          await connectWallet();
-          utils.showAlert('Wallet account changed', 'success');
-        }
-      });
-
-      window.ethereum.on('chainChanged', () => {
-        window.location.reload();
-      });
-    }
-  } else {
-    document.getElementById('stat-balance').textContent = 'Ethers not loaded';
+    console.error('Wallet initialization error:', error);
+    document.getElementById('stat-balance').textContent = 'Wallet Error';
   }
 });
 
-// Make functions globally available
-window.connectWallet = connectWallet;
-window.disconnectWallet = disconnectWallet;
-window.copyWalletAddress = copyWalletAddress;
-window.saveWalletAddress = saveWalletAddress;
-window.refreshTransactions = refreshTransactions;
+// Don't make functions globally available - use event listeners instead

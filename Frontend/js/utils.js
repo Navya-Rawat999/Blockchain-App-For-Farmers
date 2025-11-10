@@ -15,6 +15,12 @@ const utils = {
       // Ensure endpoint doesn't have duplicate /api/v1
       const cleanEndpoint = endpoint.startsWith('/api/v1') ? endpoint.substring(7) : endpoint;
       
+      // Add auth token if available
+      const token = this.getAuthToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const config = {
         method,
         url: cleanEndpoint,
