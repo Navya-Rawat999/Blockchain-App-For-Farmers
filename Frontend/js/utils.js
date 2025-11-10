@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // API Configuration - Use Vite environment variables
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+const API_BASE = import.meta.env.BACKEND_API_BASE_URL || 'http://localhost:8000/api/v1';
 
 // Configure axios defaults
 axios.defaults.baseURL = API_BASE;
