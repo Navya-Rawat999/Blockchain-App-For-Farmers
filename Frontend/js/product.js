@@ -344,7 +344,7 @@ function showErrorState(message) {
   document.getElementById('error-state').querySelector('p').textContent = message;
 }
 
-// Reviews functions (reuse from other files)
+// Reviews functions (centralized implementation)
 function getProduceReviews(produceId) {
   const saved = localStorage.getItem('produce_reviews');
   const allReviews = saved ? JSON.parse(saved) : [];
@@ -452,14 +452,3 @@ window.closeRatingModal = function() {
     modal.remove();
   }
 };
-
-function getProduceReviews(produceId) {
-  const saved = localStorage.getItem('produce_reviews');
-  const allReviews = saved ? JSON.parse(saved) : [];
-  
-  if (produceId === 'all') {
-    return allReviews;
-  }
-  
-  return allReviews.filter(review => review.produceId === produceId);
-}
