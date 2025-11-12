@@ -4,18 +4,9 @@ import { ethers } from 'ethers';
 // Get Contract ABI from environment variables
 let CONTRACT_ABI;
 try {
-  const abiString = import.meta.env.VITE_CONTRACT_ABI;
-  if (abiString) {
-    CONTRACT_ABI = abiString;
-  } 
+  CONTRACT_ABI = import.meta.env.CONTRACT_ABI;
 } catch (error) {
   console.error('Error parsing CONTRACT_ABI from environment:', error);
-  // Fallback ABI
-  CONTRACT_ABI = [
-    "function getProduceDetails(uint256 _id) public view returns (uint256 id, string memory name, address originalFarmer, address currentSeller, string memory currentStatus, uint256 priceInWei, string memory originFarm, string memory qrCode, uint256 registrationTimestamp)",
-    "function registerProduce(string memory _name, string memory _originFarm, uint256 _initialPriceInWei, string memory _QRCodeData) public returns(uint256)",
-    "function buyProduce(uint256 _id) public payable"
-  ];
 }
 
 class CentralizedWallet {
@@ -29,17 +20,11 @@ class CentralizedWallet {
     this.isInitializing = false;
     this.isReady = false;
     
-    // Contract addresses for different networks
-    this.contractAddresses = {
-      1: '0x742d35Cc6135C4Ad4C006C8C704aC8DC7CE18F72', // Ethereum Mainnet
-      5: '0x742d35Cc6135C4Ad4C006C8C704aC8DC7CE18F72', // Goerli Testnet  
-      11155111: '0x742d35Cc6135C4Ad4C006C8C704aC8DC7CE18F72', // Sepolia Testnet
-      137: '0x742d35Cc6135C4Ad4C006C8C704aC8DC7CE18F72', // Polygon Mainnet
-      80001: '0x742d35Cc6135C4Ad4C006C8C704aC8DC7CE18F72' // Mumbai Testnet
-    };
+    
+    this.contractAddresses = import.meta.env.CONTRACT_ADDRESS;
 
     // Get Infura URL from environment variables
-    this.infuraUrl = import.meta.env.VITE_INFURA_URL;
+    this.infuraUrl = import.meta.env.INFURA_URL;
 
     this.initialize();
   }
@@ -49,7 +34,6 @@ class CentralizedWallet {
     this.isInitializing = true;
 
     try {
-      // Ethers is now imported, so it's available
       this.ethers = ethers;
       await this.checkExistingConnection();
       this.setupEventListeners();
