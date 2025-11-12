@@ -6,15 +6,8 @@ let CONTRACT_ABI;
 try {
   const abiString = import.meta.env.VITE_CONTRACT_ABI;
   if (abiString) {
-    CONTRACT_ABI = JSON.parse(abiString);
-  } else {
-    // Fallback ABI if environment variable is not set
-    CONTRACT_ABI = [
-      "function getProduceDetails(uint256 _id) public view returns (uint256 id, string memory name, address originalFarmer, address currentSeller, string memory currentStatus, uint256 priceInWei, string memory originFarm, string memory qrCode, uint256 registrationTimestamp)",
-      "function registerProduce(string memory _name, string memory _originFarm, uint256 _initialPriceInWei, string memory _QRCodeData) public returns(uint256)",
-      "function buyProduce(uint256 _id) public payable"
-    ];
-  }
+    CONTRACT_ABI = abiString;
+  } 
 } catch (error) {
   console.error('Error parsing CONTRACT_ABI from environment:', error);
   // Fallback ABI
