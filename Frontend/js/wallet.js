@@ -21,7 +21,7 @@ class CentralizedWallet {
     this.isReady = false;
     
     
-    this.contractAddresses = import.meta.env.CONTRACT_ADDRESS;
+    this.contractAddress= import.meta.env.CONTRACT_ADDRESS;
 
     // Get Infura URL from environment variables
     this.infuraUrl = import.meta.env.INFURA_URL;
@@ -136,8 +136,7 @@ class CentralizedWallet {
   }
 
   getContractAddress() {
-    if (!this.networkId) return null;
-    return this.contractAddresses[this.networkId] || this.contractAddresses[11155111];
+    return this.contractAddress
   }
 
   getContract(abi = CONTRACT_ABI) {
