@@ -41,19 +41,20 @@
 
           <div class="form-group">
             <label class="form-label" for="password">Password</label>
-            <input type="password" id="password" name="password" class="form-input" placeholder="••••••••" required />
+            <input type="password" id="password" name="password" class="form-input" placeholder="••••••••" required minlength="6" />
+            <span class="form-help">Password must be at least 6 characters long.</span>
           </div>
 
           <div class="form-group">
             <label class="form-label" for="profilePic">Profile photo</label>
             <input type="file" id="profilePic" name="profilePic" class="file-input" accept="image/*" required />
-            <span class="form-help">Upload a profile picture (image only).</span>
+            <span class="form-help">Upload a profile picture (image only, max 5MB).</span>
           </div>
 
           <div class="form-group" id="id-proof-group" style="display: none;">
             <label class="form-label" for="idProof" id="id-proof-label">ID Proof</label>
             <input type="file" id="idProof" name="idProof" class="file-input" accept="image/*,.pdf" />
-            <span class="form-help" id="id-proof-help">Upload your identification document.</span>
+            <span class="form-help" id="id-proof-help">Upload your identification document (max 10MB).</span>
           </div>
 
           <button type="submit" class="btn btn-primary" style="width: 100%;" id="submit-btn">

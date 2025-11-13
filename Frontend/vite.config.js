@@ -15,7 +15,9 @@ export default defineConfig({
         profile: './HTML/profile.html',
         wallet: './HTML/wallet.html',
         product: './HTML/product.html',
-        transaction: './HTML/transaction.html'
+        transaction: './HTML/transaction.html',
+        register: './HTML/register.html',
+        login: './HTML/login.html'
       }
     }
   },

@@ -27,7 +27,7 @@ class CentralizedWallet {
         symbol: 'ETH',
         decimals: 18
       },
-      rpcUrls: [import.meta.env.SEPOLIA_RPC_URL],
+      rpcUrls: [import.meta.env.VITE_SEPOLIA_RPC_URL || 'https://sepolia.infura.io/v3/c184414a3a444b69a0914f2dad17ed37'],
       blockExplorerUrls: ['https://sepolia.etherscan.io/']
     };
 
