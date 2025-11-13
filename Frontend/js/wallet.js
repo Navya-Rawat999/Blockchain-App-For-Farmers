@@ -1,13 +1,8 @@
 import utils from './utils.js';
 import { ethers } from 'ethers';
+import CONTRACT_ABI from '../constants.js';
 
-// Get Contract ABI from environment variables
-let CONTRACT_ABI;
-try {
-  CONTRACT_ABI = import.meta.env.CONTRACT_ABI;
-} catch (error) {
-  console.error('Error parsing CONTRACT_ABI from environment:', error);
-}
+
 
 class CentralizedWallet {
   constructor() {
@@ -21,7 +16,7 @@ class CentralizedWallet {
     this.isReady = false;
     
     
-    this.contractAddress= import.meta.env.CONTRACT_ADDRESS;
+    this.contractAddress = '';
 
     // Get Infura URL from environment variables
     this.infuraUrl = import.meta.env.INFURA_URL;
@@ -148,13 +143,7 @@ class CentralizedWallet {
 
   getNetworkName(chainId) {
     const networks = {
-      1: 'Ethereum Mainnet',
-      5: 'Goerli Testnet',
       11155111: 'Sepolia Testnet',
-      137: 'Polygon Mainnet',
-      80001: 'Mumbai Testnet',
-      56: 'BSC Mainnet',
-      97: 'BSC Testnet'
     };
     return networks[chainId] || `Chain ID: ${chainId}`;
   }

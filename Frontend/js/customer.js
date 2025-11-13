@@ -194,7 +194,7 @@ async function buyProduce(produceId, priceInWei) {
 }
 
 // Set rating stars
-window.setRating = function(rating) {
+function setRating(rating) {
   const stars = document.querySelectorAll('.star');
   stars.forEach((star, index) => {
     if (index < rating) {
@@ -210,10 +210,16 @@ window.setRating = function(rating) {
 }
 
 // Submit review
-window.submitReview = function(produceId) {
+function submitReview(produceId) {
   const modal = document.getElementById('rating-modal');
+  if (!modal) {
+    utils.showAlert('Review modal not found', 'error');
+    return;
+  }
+  
   const rating = parseInt(modal.dataset.rating || '0');
-  const reviewText = document.getElementById('review-text').value.trim();
+  const reviewTextElement = document.getElementById('review-text');
+  const reviewText = reviewTextElement ? reviewTextElement.value.trim() : '';
   
   if (rating === 0) {
     utils.showAlert('Please select a rating', 'warning');
@@ -242,7 +248,7 @@ window.submitReview = function(produceId) {
   closeRatingModal();
 }
 
-window.closeRatingModal = function() {
+function closeRatingModal() {
   const modal = document.getElementById('rating-modal');
   if (modal) {
     modal.remove();
@@ -325,8 +331,11 @@ async function loadSaleHistory(produceId) {
 
     const history = await contract.getSaleHistory(produceId);
     
+    const detailsContainer = document.getElementById('produce-details');
+    if (!detailsContainer) return;
+    
     if (history.length === 0) {
-      document.getElementById('produce-details').innerHTML += `
+      detailsContainer.innerHTML += `
         <div class="mt-3">
           <h4 style="font-size: 1rem; margin-bottom: 0.5rem;">Sale History</h4>
           <p style="color: var(--text-secondary);">No sales recorded yet.</p>
@@ -336,7 +345,7 @@ async function loadSaleHistory(produceId) {
     }
 
     const historyHTML = history.map(sale => {
-      const priceInEth = window.ethers.formatEther(sale[3]);
+      const priceInEth = ethers.formatEther(sale[3]);
       const date = new Date(Number(sale[4]) * 1000);
       return `
         <div style="padding: 0.75rem; background-color: rgba(0,0,0,0.2); border-radius: 0.375rem; margin-bottom: 0.5rem;">
@@ -348,7 +357,7 @@ async function loadSaleHistory(produceId) {
       `;
     }).join('');
 
-    document.getElementById('produce-details').innerHTML += `
+    detailsContainer.innerHTML += `
       <div class="mt-3">
         <h4 style="font-size: 1rem; margin-bottom: 0.5rem;">Sale History</h4>
         ${historyHTML}
@@ -407,4 +416,8 @@ function displayReviews(reviews) {
   `;
 }
 
+// Export functions for global access if needed
 window.buyProduce = buyProduce;
+window.setRating = setRating;
+window.submitReview = submitReview;
+window.closeRatingModal = closeRatingModal;
