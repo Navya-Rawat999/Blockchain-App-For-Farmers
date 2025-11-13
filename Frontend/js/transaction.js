@@ -39,6 +39,14 @@ async function initializeTransaction(productId) {
       await centralizedWallet.connectWallet();
     }
 
+    // Ensure we're on Sepolia testnet
+    const network = await centralizedWallet.getProvider().getNetwork();
+    if (Number(network.chainId) !== 11155111) {
+      utils.showAlert('Please switch to Sepolia testnet', 'error');
+      await centralizedWallet.switchToSepolia();
+      return;
+    }
+
     const contract = centralizedWallet.getContract(CONTRACT_ABI);
     if (!contract) {
       throw new Error('Unable to connect to smart contract');

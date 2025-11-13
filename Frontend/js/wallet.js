@@ -16,10 +16,20 @@ class CentralizedWallet {
     this.isReady = false;
     
     
-    this.contractAddress = '0xdc33315A6bDd368C8be86B24F0aC9214538701b7';
+    this.contractAddress = '0x69fa6fbdbfbbceb5a4e2f2668b5e258f9cd41a0c';
 
-    // Get Infura URL from environment variables
-    this.infuraUrl = import.meta.env.INFURA_URL;
+    // Sepolia network configuration
+    this.sepoliaConfig = {
+      chainId: '0xAA36A7', // 11155111 in hex
+      chainName: 'Sepolia Test Network',
+      nativeCurrency: {
+        name: 'ETH',
+        symbol: 'ETH',
+        decimals: 18
+      },
+      rpcUrls: [import.meta.env.SEPOLIA_RPC_URL],
+      blockExplorerUrls: ['https://sepolia.etherscan.io/']
+    };
 
     this.initialize();
   }
@@ -83,12 +93,18 @@ class CentralizedWallet {
       const network = await this.provider.getNetwork();
       this.networkId = Number(network.chainId);
       this.networkName = this.getNetworkName(this.networkId);
+
+      // Check if connected to Sepolia
+      if (this.networkId !== 11155111) {
+        console.log(`Connected to wrong network: ${this.networkId}, switching to Sepolia...`);
+        await this.switchToSepolia();
+      }
       
       this.isConnected = true;
-
       this.updateWalletUI();
 
       console.log('Wallet connected successfully:', this.userAddress);
+      console.log('Network:', this.networkName, 'ID:', this.networkId);
 
       return {
         address: this.userAddress,
@@ -100,34 +116,33 @@ class CentralizedWallet {
     }
   }
 
-  async disconnectWallet() {
+  async switchToSepolia() {
     try {
-      this.provider = null;
-      this.signer = null;
-      this.userAddress = null;
-      this.networkId = null;
-      this.networkName = null;
-      this.isConnected = false;
-
-      this.updateWalletUI();
-      
-      return true;
-    } catch (error) {
-      console.error('Wallet disconnection error:', error);
-      throw error;
-    }
-  }
-
-  // Helper method to record transactions
-  async recordTransaction(transactionData) {
-    try {
-      await utils.apiCall('/api/v1/transactions/record', {
-        method: 'POST',
-        body: JSON.stringify(transactionData)
+      // Try to switch to Sepolia
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: this.sepoliaConfig.chainId }],
       });
-    } catch (error) {
-      console.error('Error recording transaction:', error);
+    } catch (switchError) {
+      // If Sepolia is not added to wallet, add it
+      if (switchError.code === 4902) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [this.sepoliaConfig],
+          });
+        } catch (addError) {
+          throw new Error('Failed to add Sepolia network to wallet');
+        }
+      } else {
+        throw new Error('Failed to switch to Sepolia network');
+      }
     }
+
+    // Update network info after switch
+    const network = await this.provider.getNetwork();
+    this.networkId = Number(network.chainId);
+    this.networkName = this.getNetworkName(this.networkId);
   }
 
   getContractAddress() {
@@ -162,71 +177,51 @@ class CentralizedWallet {
     }
   }
 
-  handleChainChange(chainId) {
-    window.location.reload();
-  }
-
-  updateWalletUI() {
-    const connectButtons = document.querySelectorAll('.connect-wallet-btn');
-    const disconnectButtons = document.querySelectorAll('.disconnect-wallet-btn');
+  async handleChainChange(chainId) {
+    const newChainId = parseInt(chainId, 16);
+    console.log('Chain changed to:', newChainId);
     
-    connectButtons.forEach(btn => {
-      if (this.isConnected) {
-        btn.textContent = 'Wallet Connected';
-        btn.disabled = true;
-        btn.classList.add('connected');
-      } else {
-        btn.textContent = 'Connect MetaMask';
-        btn.disabled = false;
-        btn.classList.remove('connected');
-      }
-    });
-
-    disconnectButtons.forEach(btn => {
-      btn.style.display = this.isConnected ? 'inline-block' : 'none';
-    });
-
-    const addressElements = document.querySelectorAll('.wallet-address');
-    const networkElements = document.querySelectorAll('.wallet-network');
-    
-    addressElements.forEach(el => {
-      el.textContent = this.userAddress || 'Not connected';
-    });
-
-    networkElements.forEach(el => {
-      el.textContent = this.networkName || 'Not connected';
-    });
-
-    const connectedSections = document.querySelectorAll('.wallet-connected');
-    const disconnectedSections = document.querySelectorAll('.wallet-disconnected');
-    
-    connectedSections.forEach(section => {
-      section.style.display = this.isConnected ? 'block' : 'none';
-    });
-
-    disconnectedSections.forEach(section => {
-      section.style.display = this.isConnected ? 'none' : 'block';
-    });
-  }
-
-  copyAddress() {
-    if (!this.userAddress) {
+    if (newChainId !== 11155111) {
       if (typeof utils !== 'undefined' && utils.showAlert) {
-        utils.showAlert('No wallet address to copy', 'warning');
+        utils.showAlert('Please switch to Sepolia testnet for this application', 'warning');
       }
-      return;
+      await this.switchToSepolia();
     }
+    
+    // Update network info
+    this.networkId = newChainId;
+    this.networkName = this.getNetworkName(newChainId);
+    this.updateWalletUI();
+  }
 
-    navigator.clipboard.writeText(this.userAddress).then(() => {
-      if (typeof utils !== 'undefined' && utils.showAlert) {
-        utils.showAlert('Address copied to clipboard!', 'success');
-      }
-    }).catch(err => {
-      console.error('Failed to copy address:', err);
-      if (typeof utils !== 'undefined' && utils.showAlert) {
-        utils.showAlert('Failed to copy address', 'error');
-      }
-    });
+  async disconnectWallet() {
+    try {
+      this.provider = null;
+      this.signer = null;
+      this.userAddress = null;
+      this.networkId = null;
+      this.networkName = null;
+      this.isConnected = false;
+
+      this.updateWalletUI();
+      
+      return true;
+    } catch (error) {
+      console.error('Wallet disconnection error:', error);
+      throw error;
+    }
+  }
+
+  // Helper method to record transactions
+  async recordTransaction(transactionData) {
+    try {
+      await utils.apiCall('/api/v1/transactions/record', {
+        method: 'POST',
+        body: JSON.stringify(transactionData)
+      });
+    } catch (error) {
+      console.error('Error recording transaction:', error);
+    }
   }
 
   // Utility methods for easier access

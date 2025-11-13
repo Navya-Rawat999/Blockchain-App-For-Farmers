@@ -20,12 +20,16 @@
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
           <div>
             <h3 style="margin: 0;">🦊 Wallet Status</h3>
-            <p style="margin: 0.5rem 0; color: var(--text-secondary);">Connect your wallet to register produce on blockchain</p>
+            <p style="margin: 0.5rem 0; color: var(--text-secondary);">Connect your wallet to Sepolia testnet to register produce</p>
             <div id="wallet-info" style="display: none; margin-top: 0.5rem;">
               <small style="color: var(--success);">
                 ✓ Connected: <span id="connected-address"></span><br>
+                Network: <span class="wallet-network">Not connected</span><br>
                 Balance: <span id="wallet-balance">0.0000 ETH</span>
               </small>
+            </div>
+            <div id="network-warning" style="display: none; margin-top: 0.5rem; padding: 0.5rem; background: var(--warning); color: white; border-radius: 0.25rem;">
+              ⚠️ Please switch to Sepolia testnet to use this application
             </div>
           </div>
           <button class="btn btn-primary connect-wallet-btn" onclick="window.connectWallet()">

@@ -352,6 +352,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
+      // Ensure we're on Sepolia testnet
+      const network = await centralizedWallet.getProvider().getNetwork();
+      if (Number(network.chainId) !== 11155111) {
+        utils.showAlert('Please switch to Sepolia testnet to register produce', 'error');
+        await centralizedWallet.switchToSepolia();
+        return;
+      }
+
       const contract = centralizedWallet.getContract(CONTRACT_ABI);
       if (!contract) {
         throw new Error('Unable to connect to smart contract');
@@ -359,12 +367,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const priceInWei = ethers.parseEther(priceInEth);
 
-      utils.showAlert('Registering on blockchain...', 'warning');
+      utils.showAlert('Registering on Sepolia blockchain...', 'warning');
       
       // Call the contract's registerProduce function
       const tx = await contract.registerProduce(name, originFarm, priceInWei, qrCode);
       
-      utils.showAlert('Transaction submitted. Waiting for confirmation...', 'warning');
+      utils.showAlert('Transaction submitted to Sepolia. Waiting for confirmation...', 'warning');
       const receipt = await tx.wait();
 
       // Parse the ProduceRegistered event to get the blockchain ID
@@ -407,7 +415,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.error('Registration error:', error);
       
       let errorMessage = error.message || 'Registration failed. Please try again.';
-      if (error.message.includes('MetaMask')) {
+      if (error.message.includes('wrong network')) {
+        errorMessage = 'Please switch to Sepolia testnet in MetaMask.';
+      } else if (error.message.includes('MetaMask')) {
         errorMessage = 'Please install MetaMask and connect your wallet.';
       } else if (error.message.includes('rejected')) {
         errorMessage = 'Transaction was rejected. Please try again.';
