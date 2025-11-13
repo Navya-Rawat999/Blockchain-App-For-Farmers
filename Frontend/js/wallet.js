@@ -1,6 +1,6 @@
 import utils from './utils.js';
 import { ethers } from 'ethers';
-import CONTRACT_ABI from '../constants.js';
+import { CONTRACT_ABI } from '../constants.js';
 
 
 
@@ -16,7 +16,7 @@ class CentralizedWallet {
     this.isReady = false;
     
     
-    this.contractAddress = '';
+    this.contractAddress = '0xdc33315A6bDd368C8be86B24F0aC9214538701b7';
 
     // Get Infura URL from environment variables
     this.infuraUrl = import.meta.env.INFURA_URL;
