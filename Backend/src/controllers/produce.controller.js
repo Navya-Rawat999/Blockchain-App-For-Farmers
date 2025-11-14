@@ -544,6 +544,43 @@ const removeSoldProduce = asyncHandler(async (produceId) => {
   return produceItem;
 });
 
+// Get featured produce for homepage
+const getFeaturedProduce = asyncHandler(async (req, res) => {
+  const featuredItems = await ProduceItem.find({ 
+    isAvailable: true, 
+    currentStatus: { $ne: 'Sold' } 
+  })
+    .sort({ createdAt: -1 })
+    .limit(6)
+    .select('-__v');
+
+  return res.status(200).json(
+    new ApiResponse(200, featuredItems, "Featured produce retrieved successfully")
+  );
+});
+
+// Increment product view count
+const incrementProductView = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const produceItem = await ProduceItem.findOne({ 
+    $or: [
+      { _id: id },
+      { blockchainId: id },
+      { id: parseInt(id) || 0 }
+    ]
+  });
+
+  if (produceItem) {
+    produceItem.views = (produceItem.views || 0) + 1;
+    await produceItem.save();
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200, { views: produceItem?.views || 0 }, "View count updated")
+  );
+});
+
 export {
   registerProduce,
   getAllProduce,
