@@ -133,7 +133,7 @@ function displayProducts(products) {
           </div>
           <div class="detail-row">
             <span class="detail-label">Views:</span>
-            <span class="detail-value">${product.views || 0} 👁️</span>
+            <span class="detail-value">${product.views || 0} </span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Listed:</span>
@@ -153,7 +153,7 @@ function displayProducts(products) {
               class="btn btn-outline view-product-btn"
               onclick="viewProduct('${product.id || product.blockchainId}')"
             >
-              👁️ View
+              View
             </button>
             ${isAvailable ? `
               <button 
@@ -164,7 +164,7 @@ function displayProducts(products) {
               </button>
             ` : `
               <button class="btn btn-ghost" disabled>
-                ❌ Sold Out
+                Sold Out
               </button>
             `}
           </div>
@@ -387,8 +387,8 @@ function updateStatsDisplay(data) {
   if (statsEl && data.totalItems !== undefined) {
     statsEl.innerHTML = `
       <div style="display: flex; gap: 1rem; justify-content: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
-        <span>📦 ${data.totalItems} total items</span>
-        <span>📄 Page ${data.currentPage} of ${data.totalPages}</span>
+        <span> ${data.totalItems} total items</span>
+        <span> Page ${data.currentPage} of ${data.totalPages}</span>
       </div>
     `;
   }
