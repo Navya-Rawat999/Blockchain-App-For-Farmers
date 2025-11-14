@@ -107,26 +107,66 @@ async function viewProduceDetails(produceId) {
       ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
       : 0;
 
+    // Get additional details from database (including image) and validate purchase eligibility
+    let dbDetails = null;
+    let canPurchase = false;
+    let purchaseError = '';
+
+    try {
+      const dbResponse = await utils.apiCall(`/api/v1/produce/${produceId}`);
+      dbDetails = dbResponse.data;
+    } catch (error) {
+      console.log('Could not fetch database details:', error);
+    }
+
+    // Check if user can purchase this produce
+    try {
+      const validationResponse = await utils.apiCall(`/api/v1/produce/${produceId}/validate-purchase`);
+      canPurchase = validationResponse.data.eligible;
+    } catch (error) {
+      canPurchase = false;
+      if (error.message.includes('Only customers can purchase')) {
+        purchaseError = 'Only customers can purchase produce. Please switch to a customer account.';
+      } else if (error.message.includes('cannot purchase your own')) {
+        purchaseError = 'You cannot purchase your own produce.';
+      } else {
+        purchaseError = error.message || 'Unable to validate purchase eligibility';
+      }
+    }
+
     detailsContainer.innerHTML = `
       <div class="card" style="background-color: var(--bg-dark); border: 2px solid var(--border-color);">
-        <h3 style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--primary-color);">${details[1]}</h3>
-        
-        ${reviews.length > 0 ? `
-          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
-            <span style="color: #ffd700; font-size: 1.2rem;">⭐ ${averageRating}</span>
-            <span style="color: var(--text-secondary);">(${reviews.length} review${reviews.length !== 1 ? 's' : ''})</span>
+        <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+          ${dbDetails?.produceImage ? `
+            <div style="flex-shrink: 0;">
+              <img src="${dbDetails.produceImage}" alt="${details[1]}" 
+                   style="width: 200px; height: 200px; object-fit: cover; border-radius: 0.5rem; border: 1px solid var(--border-color);">
+            </div>
+          ` : ''}
+          <div style="flex: 1;">
+            <h3 style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--primary-color);">${details[1]}</h3>
+            
+            ${reviews.length > 0 ? `
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                <span style="color: #ffd700; font-size: 1.2rem;">⭐ ${averageRating}</span>
+                <span style="color: var(--text-secondary);">(${reviews.length} review${reviews.length !== 1 ? 's' : ''})</span>
+              </div>
+            ` : ''}
+            
+            <div style="display: grid; gap: 0.75rem;">
+              <div><strong>Produce ID:</strong> ${details[0].toString()}</div>
+              <div><strong>Origin Farm:</strong> ${details[6]}</div>
+              <div><strong>Status:</strong> 
+                <span style="padding: 0.25rem 0.5rem; background-color: var(--success); border-radius: 0.25rem; font-size: 0.875rem;">
+                  ${details[4]}
+                </span>
+              </div>
+              <div><strong>Price:</strong> ${priceInEth} ETH</div>
+            </div>
           </div>
-        ` : ''}
-        
-        <div style="display: grid; gap: 0.75rem;">
-          <div><strong>Produce ID:</strong> ${details[0].toString()}</div>
-          <div><strong>Origin Farm:</strong> ${details[6]}</div>
-          <div><strong>Status:</strong> 
-            <span style="padding: 0.25rem 0.5rem; background-color: var(--success); border-radius: 0.25rem; font-size: 0.875rem;">
-              ${details[4]}
-            </span>
-          </div>
-          <div><strong>Price:</strong> ${priceInEth} ETH</div>
+        </div>
+
+        <div style="display: grid; gap: 0.75rem; margin-bottom: 1rem;">
           <div><strong>Original Farmer:</strong> 
             <code style="font-size: 0.75rem; background-color: rgba(0,0,0,0.3); padding: 0.25rem 0.5rem; border-radius: 0.25rem;">
               ${details[2]}
@@ -142,14 +182,20 @@ async function viewProduceDetails(produceId) {
         </div>
 
         ${details[4] !== 'Sold' ? `
-          <button 
-            class="btn btn-primary mt-3 buy-produce-btn" 
-            style="width: 100%;"
-            data-produce-id="${produceId}"
-            data-price-in-wei="${details[5].toString()}"
-          >
-            Purchase for ${priceInEth} ETH
-          </button>
+          ${canPurchase ? `
+            <button 
+              class="btn btn-primary mt-3 buy-produce-btn" 
+              style="width: 100%;"
+              data-produce-id="${produceId}"
+              data-price-in-wei="${details[5].toString()}"
+            >
+              Purchase for ${priceInEth} ETH
+            </button>
+          ` : `
+            <div class="alert alert-warning mt-3">
+              <strong>Cannot Purchase:</strong> ${purchaseError}
+            </div>
+          `}
         ` : `
           <div class="alert alert-warning mt-3">
             This produce has already been sold.
@@ -171,11 +217,19 @@ async function viewProduceDetails(produceId) {
   }
 }
 
-// Purchase produce
+// Purchase produce - with additional role validation
 async function buyProduce(produceId, priceInWei) {
   try {
     if (!centralizedWallet.isWalletConnected()) {
       utils.showAlert('Please connect your wallet first', 'error');
+      return;
+    }
+
+    // Validate purchase eligibility before proceeding
+    try {
+      await utils.apiCall(`/api/v1/produce/${produceId}/validate-purchase`);
+    } catch (validationError) {
+      utils.showAlert(validationError.message || 'You are not eligible to purchase this produce', 'error');
       return;
     }
 

@@ -107,102 +107,282 @@ const recordTransaction = asyncHandler(async (req, res) => {
   );
 });
 
-// Get user transaction history
+// Enhanced get user transaction history with complex aggregation and pagination
 const getUserTransactions = asyncHandler(async (req, res) => {
   const {
     page = 1,
     limit = 20,
     type = 'all',
     sortBy = 'createdAt',
-    sortOrder = 'desc'
+    sortOrder = 'desc',
+    dateFrom,
+    dateTo,
+    minAmount,
+    maxAmount,
+    status = 'all'
   } = req.query;
 
   const userId = req.user._id;
 
-  // Build query for transactions initiated by this user
-  const query = { userId };
+  // Build aggregation pipeline
+  const pipeline = [];
 
+  // Match stage - build complex query
+  const matchConditions = { userId };
+
+  // Transaction type filtering
   if (type !== 'all') {
-    query.transactionType = type;
+    matchConditions.transactionType = type;
   }
 
-  // Build sort object
-  const sort = {};
-  sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+  // Status filtering
+  if (status !== 'all') {
+    matchConditions.status = status;
+  }
 
-  // Execute query with pagination
-  const skip = (page - 1) * limit;
+  // Date range filtering
+  if (dateFrom || dateTo) {
+    matchConditions.createdAt = {};
+    if (dateFrom) matchConditions.createdAt.$gte = new Date(dateFrom);
+    if (dateTo) matchConditions.createdAt.$lte = new Date(dateTo);
+  }
 
-  const [transactions, totalCount] = await Promise.all([
-    TransactionHistory.find(query)
-      .populate('userId', 'username fullName')
-      .sort(sort)
-      .skip(skip)
-      .limit(parseInt(limit))
-      .select('-__v'),
-    TransactionHistory.countDocuments(query)
-  ]);
+  // Amount range filtering (for sale and registration transactions)
+  if (minAmount || maxAmount) {
+    const amountConditions = {};
+    if (minAmount) amountConditions.$gte = parseFloat(minAmount) * Math.pow(10, 18);
+    if (maxAmount) amountConditions.$lte = parseFloat(maxAmount) * Math.pow(10, 18);
+    
+    matchConditions.$expr = {
+      $and: [
+        { $ne: ["$amountInWei", null] },
+        { $gte: [{ $toDouble: "$amountInWei" }, amountConditions.$gte || 0] },
+        { $lte: [{ $toDouble: "$amountInWei" }, amountConditions.$lte || Number.MAX_SAFE_INTEGER] }
+      ]
+    };
+  }
 
-  const totalPages = Math.ceil(totalCount / limit);
+  pipeline.push({ $match: matchConditions });
+
+  // Add user details lookup
+  pipeline.push({
+    $lookup: {
+      from: 'users',
+      localField: 'userId',
+      foreignField: '_id',
+      as: 'userDetails',
+      pipeline: [{ $project: { username: 1, fullName: 1, role: 1 } }]
+    }
+  });
+
+  // Add produce details lookup
+  pipeline.push({
+    $lookup: {
+      from: 'produceitems',
+      localField: 'produceId',
+      foreignField: 'blockchainId',
+      as: 'produceDetails',
+      pipeline: [{ $project: { name: 1, originFarm: 1, produceImage: 1 } }]
+    }
+  });
+
+  // Add calculated fields
+  pipeline.push({
+    $addFields: {
+      amountInEth: { 
+        $cond: [
+          { $ne: ["$amountInWei", null] },
+          { $divide: [{ $toDouble: "$amountInWei" }, Math.pow(10, 18)] },
+          null
+        ]
+      },
+      gasFeeInEth: { 
+        $cond: [
+          { $ne: ["$gasFeeInWei", null] },
+          { $divide: [{ $toDouble: "$gasFeeInWei" }, Math.pow(10, 18)] },
+          null
+        ]
+      },
+      user: { $arrayElemAt: ["$userDetails", 0] },
+      produce: { $arrayElemAt: ["$produceDetails", 0] },
+      daysSinceTransaction: {
+        $floor: {
+          $divide: [
+            { $subtract: [new Date(), "$createdAt"] },
+            1000 * 60 * 60 * 24
+          ]
+        }
+      }
+    }
+  });
+
+  // Sorting
+  const sortStage = {};
+  if (sortBy === 'amount') {
+    sortStage.amountInEth = sortOrder === 'desc' ? -1 : 1;
+  } else {
+    sortStage[sortBy] = sortOrder === 'desc' ? -1 : 1;
+  }
+  pipeline.push({ $sort: sortStage });
+
+  // Project final fields
+  pipeline.push({
+    $project: {
+      userDetails: 0,
+      produceDetails: 0,
+      __v: 0
+    }
+  });
+
+  const options = {
+    page: parseInt(page),
+    limit: parseInt(limit),
+    customLabels: {
+      docs: 'transactions',
+      totalDocs: 'totalTransactions',
+      limit: 'transactionsPerPage',
+      page: 'currentPage',
+      totalPages: 'totalPages',
+      pagingCounter: 'serialNumberStartFrom',
+      hasPrevPage: 'hasPrev',
+      hasNextPage: 'hasNext',
+      prevPage: 'prev',
+      nextPage: 'next'
+    }
+  };
+
+  const result = await TransactionHistory.aggregatePaginate(
+    TransactionHistory.aggregate(pipeline),
+    options
+  );
 
   return res.status(200).json(
-    new ApiResponse(200, {
-      transactions,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages,
-        totalItems: totalCount,
-        hasNext: page < totalPages,
-        hasPrev: page > 1
-      }
-    }, "User transactions retrieved successfully")
+    new ApiResponse(200, result, "Enhanced user transactions retrieved successfully")
   );
 });
 
-// Get transaction statistics for user
+// Enhanced transaction statistics with detailed aggregation
 const getUserTransactionStats = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
   const stats = await TransactionHistory.aggregate([
-    { $match: { userId: userId } },
+    { $match: { userId } },
     {
-      $group: {
-        _id: '$transactionType',
-        count: { $sum: 1 },
-        totalAmount: {
-          $sum: {
-            $cond: [
-              { $in: ['$transactionType', ['sale', 'registration']] },
-              { $toDouble: '$amountInWei' },
-              0
-            ]
+      $facet: {
+        // Basic stats by type
+        byType: [
+          {
+            $group: {
+              _id: '$transactionType',
+              count: { $sum: 1 },
+              totalAmount: {
+                $sum: {
+                  $cond: [
+                    { $in: ['$transactionType', ['sale', 'registration']] },
+                    { $toDouble: '$amountInWei' },
+                    0
+                  ]
+                }
+              },
+              avgAmount: {
+                $avg: {
+                  $cond: [
+                    { $in: ['$transactionType', ['sale', 'registration']] },
+                    { $toDouble: '$amountInWei' },
+                    null
+                  ]
+                }
+              }
+            }
           }
-        }
+        ],
+        // Monthly activity
+        monthlyActivity: [
+          {
+            $group: {
+              _id: {
+                year: { $year: '$createdAt' },
+                month: { $month: '$createdAt' }
+              },
+              count: { $sum: 1 },
+              totalAmount: {
+                $sum: {
+                  $cond: [
+                    { $ne: ['$amountInWei', null] },
+                    { $toDouble: '$amountInWei' },
+                    0
+                  ]
+                }
+              }
+            }
+          },
+          { $sort: { '_id.year': -1, '_id.month': -1 } },
+          { $limit: 12 }
+        ],
+        // Overall stats
+        overall: [
+          {
+            $group: {
+              _id: null,
+              totalTransactions: { $sum: 1 },
+              totalAmountWei: {
+                $sum: {
+                  $cond: [
+                    { $ne: ['$amountInWei', null] },
+                    { $toDouble: '$amountInWei' },
+                    0
+                  ]
+                }
+              },
+              avgGasFee: {
+                $avg: {
+                  $cond: [
+                    { $ne: ['$gasFeeInWei', null] },
+                    { $toDouble: '$gasFeeInWei' },
+                    null
+                  ]
+                }
+              },
+              recentTransactions: { 
+                $sum: { 
+                  $cond: [
+                    { $gte: ['$createdAt', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)] },
+                    1,
+                    0
+                  ]
+                }
+              }
+            }
+          }
+        ]
       }
     }
   ]);
 
-  // Calculate additional stats
-  const totalTransactions = await TransactionHistory.countDocuments({ userId });
-  const recentTransactions = await TransactionHistory.countDocuments({
-    userId,
-    createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
-  });
-
+  const result = stats[0];
   const formattedStats = {
-    totalTransactions,
-    recentTransactions,
-    byType: stats.reduce((acc, stat) => {
-      acc[stat._id] = {
-        count: stat.count,
-        totalAmount: stat.totalAmount.toString()
-      };
-      return acc;
-    }, {})
+    overall: {
+      ...result.overall[0],
+      totalAmountEth: result.overall[0]?.totalAmountWei 
+        ? (result.overall[0].totalAmountWei / Math.pow(10, 18)).toFixed(6)
+        : '0',
+      avgGasFeeEth: result.overall[0]?.avgGasFee 
+        ? (result.overall[0].avgGasFee / Math.pow(10, 18)).toFixed(6)
+        : '0'
+    },
+    byType: result.byType.map(type => ({
+      ...type,
+      totalAmountEth: (type.totalAmount / Math.pow(10, 18)).toFixed(6),
+      avgAmountEth: type.avgAmount ? (type.avgAmount / Math.pow(10, 18)).toFixed(6) : '0'
+    })),
+    monthlyActivity: result.monthlyActivity.map(month => ({
+      ...month,
+      totalAmountEth: (month.totalAmount / Math.pow(10, 18)).toFixed(6)
+    }))
   };
 
   return res.status(200).json(
-    new ApiResponse(200, formattedStats, "Transaction statistics retrieved successfully")
+    new ApiResponse(200, formattedStats, "Enhanced transaction statistics retrieved successfully")
   );
 });
 

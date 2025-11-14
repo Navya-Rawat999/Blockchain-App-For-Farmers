@@ -332,6 +332,41 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const form = document.getElementById('register-produce-form');
   const registerBtn = document.getElementById('register-btn');
+  const imageInput = document.getElementById('produce-image');
+  const imagePreview = document.getElementById('image-preview');
+  const previewImg = document.getElementById('preview-img');
+
+  // Handle image preview
+  imageInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        utils.showAlert('Please select an image file', 'error');
+        imageInput.value = '';
+        imagePreview.style.display = 'none';
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        utils.showAlert('Image size should be less than 5MB', 'error');
+        imageInput.value = '';
+        imagePreview.style.display = 'none';
+        return;
+      }
+
+      // Show preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        previewImg.src = e.target.result;
+        imagePreview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    } else {
+      imagePreview.style.display = 'none';
+    }
+  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -340,6 +375,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const originFarm = document.getElementById('origin-farm').value;
     const priceInEth = document.getElementById('price').value;
     const qrCode = document.getElementById('qr-code').value;
+    const imageFile = document.getElementById('produce-image').files[0];
+
+    // Validate image
+    if (!imageFile) {
+      utils.showAlert('Please upload a produce image', 'error');
+      return;
+    }
 
     registerBtn.disabled = true;
     registerBtn.innerHTML = '<span class="spinner"></span> Registering...';
@@ -392,24 +434,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       try {
-        utils.showAlert('Saving to database...', 'warning');
+        utils.showAlert('Saving to database with image...', 'warning');
+        
+        // Prepare form data for API call including image
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('originFarm', originFarm);
+        formData.append('priceInWei', priceInWei.toString());
+        formData.append('qrCode', qrCode);
+        formData.append('blockchainId', parseInt(blockchainId));
+        formData.append('transactionHash', receipt.hash);
+        formData.append('produceImage', imageFile);
+
         await utils.apiCall('/api/v1/produce/register', {
           method: 'POST',
-          body: JSON.stringify({
-            name,
-            originFarm,
-            priceInWei: priceInWei.toString(),
-            qrCode,
-            blockchainId: parseInt(blockchainId),
-            transactionHash: receipt.hash
-          }),
+          body: formData, // Send as FormData for file upload
         });
       } catch (dbError) {
         console.log('Database save failed, but blockchain registration succeeded:', dbError);
+        utils.showAlert('Blockchain registration successful, but database save failed. Your produce is registered on blockchain.', 'warning');
       }
 
-      utils.showAlert('Produce registered successfully!', 'success');
+      utils.showAlert('Produce registered successfully with image!', 'success');
       form.reset();
+      imagePreview.style.display = 'none';
       await loadProduceList();
     } catch (error) {
       console.error('Registration error:', error);

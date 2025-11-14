@@ -1,4 +1,5 @@
 import mongoose, { Schema } from 'mongoose'
+import mongooseAggregatePaginate from 'mongoose-aggregate-paginate-v2'
 
 const transactionHistory_Schema = new Schema({
   // Basic transaction info
@@ -83,5 +84,8 @@ transactionHistory_Schema.index({ transactionType: 1, status: 1 });
 transactionHistory_Schema.index({ produceId: 1, transactionType: 1 });
 transactionHistory_Schema.index({ buyerAddress: 1 });
 transactionHistory_Schema.index({ sellerAddress: 1 });
+
+// Add pagination plugin
+transactionHistory_Schema.plugin(mongooseAggregatePaginate);
 
 export const TransactionHistory = mongoose.model("TransactionHistory", transactionHistory_Schema)

@@ -1,4 +1,5 @@
 import mongoose, { Schema } from 'mongoose'
+import mongooseAggregatePaginate from 'mongoose-aggregate-paginate-v2'
 
 const produceItem_Schema = new Schema({
   id: {
@@ -53,6 +54,10 @@ const produceItem_Schema = new Schema({
     required: true,
     trim: true
   },
+  produceImage: {
+    type: String, // Cloudinary URL for produce image
+    required: true
+  },
   currentStatus: {
     type: String,
     enum: ['Harvested', 'In Transit', 'Ready for Sale', 'Sold'],
@@ -90,5 +95,7 @@ const produceItem_Schema = new Schema({
 produceItem_Schema.index({ name: 'text', originFarm: 'text', originalFarmer: 'text' });
 produceItem_Schema.index({ isAvailable: 1, currentStatus: 1 });
 produceItem_Schema.index({ farmerAddress: 1, createdAt: -1 });
+
+produceItem_Schema.plugin(mongooseAggregatePaginate)
 
 export const ProduceItem = mongoose.model("ProduceItem", produceItem_Schema)

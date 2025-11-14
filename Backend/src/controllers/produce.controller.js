@@ -1,4 +1,5 @@
 import { ProduceItem } from "../models/produceItem.models.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiResponse } from '../utils/ApiResponse.js'
 import { ApiError } from '../utils/ApiError.js'
@@ -15,6 +16,12 @@ const registerProduce = asyncHandler(async (req, res) => {
 
   if (!blockchainId || !transactionHash) {
     throw new ApiError(400, "Blockchain transaction details required");
+  }
+
+  // Validate produce image
+  const produceImageLocalPath = req.file?.path;
+  if (!produceImageLocalPath) {
+    throw new ApiError(400, "Produce image is required");
   }
 
   // Validate blockchain ID is a positive integer
@@ -34,6 +41,12 @@ const registerProduce = asyncHandler(async (req, res) => {
     throw new ApiError(409, "Produce with this blockchain ID already exists");
   }
 
+  // Upload produce image to Cloudinary
+  const produceImage = await uploadOnCloudinary(produceImageLocalPath);
+  if (!produceImage) {
+    throw new ApiError(400, "Failed to upload produce image");
+  }
+
   // Create produce item in database
   const produceItem = await ProduceItem.create({
     id: parsedBlockchainId,
@@ -44,6 +57,7 @@ const registerProduce = asyncHandler(async (req, res) => {
     priceInWei: priceInWei.toString(), // Store as string for large numbers
     originFarm: originFarm.trim(),
     qrCode: qrCode.trim(),
+    produceImage: produceImage.url, // Store Cloudinary URL
     blockchainId: parsedBlockchainId,
     transactionHash: transactionHash,
     currentStatus: "Harvested",
@@ -55,66 +69,140 @@ const registerProduce = asyncHandler(async (req, res) => {
   );
 });
 
-// Get all produce items for marketplace
+// Enhanced get all produce items for marketplace with advanced aggregation and pagination
 const getAllProduce = asyncHandler(async (req, res) => {
   const { 
     page = 1, 
     limit = 12, 
     search = '', 
-    status = 'available', // Default to available only
+    status = 'available',
     sortBy = 'createdAt',
-    sortOrder = 'desc'
+    sortOrder = 'desc',
+    minPrice = 0,
+    maxPrice = 0,
+    farmLocation = '',
+    farmer = ''
   } = req.query;
 
-  // Build search query
-  const query = {};
-  
+  // Build aggregation pipeline for complex filtering and sorting
+  const pipeline = [];
+
+  // Match stage - build complex query
+  const matchConditions = {};
+
+  // Search functionality
   if (search) {
-    query.$or = [
+    matchConditions.$or = [
       { name: { $regex: search, $options: 'i' } },
       { originFarm: { $regex: search, $options: 'i' } },
       { originalFarmer: { $regex: search, $options: 'i' } }
     ];
   }
 
+  // Status filtering
   if (status === 'available') {
-    query.isAvailable = true;
-    query.currentStatus = { $ne: 'Sold' };
+    matchConditions.isAvailable = true;
+    matchConditions.currentStatus = { $ne: 'Sold' };
   } else if (status === 'sold') {
-    query.currentStatus = 'Sold';
-  } else if (status === 'all') {
-    // Show all items regardless of status
+    matchConditions.currentStatus = 'Sold';
   }
 
-  // Build sort object
-  const sort = {};
-  sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+  // Price range filtering
+  if (minPrice || maxPrice) {
+    const priceConditions = {};
+    if (minPrice) priceConditions.$gte = parseFloat(minPrice);
+    if (maxPrice) priceConditions.$lte = parseFloat(maxPrice);
+    
+    matchConditions.$expr = {
+      $and: [
+        { $gte: [{ $toDouble: "$priceInWei" }, (priceConditions.$gte || 0) * Math.pow(10, 18)] },
+        { $lte: [{ $toDouble: "$priceInWei" }, (priceConditions.$lte || Number.MAX_SAFE_INTEGER) * Math.pow(10, 18)] }
+      ]
+    };
+  }
 
-  // Execute query with pagination
-  const skip = (page - 1) * limit;
-  
-  const [produceItems, totalCount] = await Promise.all([
-    ProduceItem.find(query)
-      .sort(sort)
-      .skip(skip)
-      .limit(parseInt(limit))
-      .select('-__v'),
-    ProduceItem.countDocuments(query)
-  ]);
+  // Farm location filtering
+  if (farmLocation) {
+    matchConditions.originFarm = { $regex: farmLocation, $options: 'i' };
+  }
 
-  const totalPages = Math.ceil(totalCount / limit);
+  // Farmer filtering
+  if (farmer) {
+    matchConditions.originalFarmer = { $regex: farmer, $options: 'i' };
+  }
+
+  pipeline.push({ $match: matchConditions });
+
+  // Add farmer details lookup
+  pipeline.push({
+    $lookup: {
+      from: 'users',
+      localField: 'farmerAddress',
+      foreignField: '_id',
+      as: 'farmerDetails',
+      pipeline: [{ $project: { username: 1, fullName: 1, profilePic: 1 } }]
+    }
+  });
+
+  // Add calculated fields
+  pipeline.push({
+    $addFields: {
+      priceInEth: { $divide: [{ $toDouble: "$priceInWei" }, Math.pow(10, 18)] },
+      farmerInfo: { $arrayElemAt: ["$farmerDetails", 0] },
+      daysSinceRegistration: {
+        $floor: {
+          $divide: [
+            { $subtract: [new Date(), "$createdAt"] },
+            1000 * 60 * 60 * 24
+          ]
+        }
+      }
+    }
+  });
+
+  // Sorting
+  const sortStage = {};
+  if (sortBy === 'price') {
+    sortStage.priceInEth = sortOrder === 'desc' ? -1 : 1;
+  } else if (sortBy === 'popularity') {
+    sortStage.views = sortOrder === 'desc' ? -1 : 1;
+  } else {
+    sortStage[sortBy] = sortOrder === 'desc' ? -1 : 1;
+  }
+  pipeline.push({ $sort: sortStage });
+
+  // Project final fields
+  pipeline.push({
+    $project: {
+      farmerDetails: 0,
+      __v: 0
+    }
+  });
+
+  const options = {
+    page: parseInt(page),
+    limit: parseInt(limit),
+    customLabels: {
+      docs: 'items',
+      totalDocs: 'totalItems',
+      limit: 'itemsPerPage',
+      page: 'currentPage',
+      totalPages: 'totalPages',
+      pagingCounter: 'serialNumberStartFrom',
+      hasPrevPage: 'hasPrev',
+      hasNextPage: 'hasNext',
+      prevPage: 'prev',
+      nextPage: 'next'
+    }
+  };
+
+  const result = await ProduceItem.aggregatePaginate(
+    ProduceItem.aggregate(pipeline),
+    options
+  );
 
   return res.status(200).json(
-    new ApiResponse(200, {
-      items: produceItems,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages,
-        totalItems: totalCount,
-        hasNext: page < totalPages,
-        hasPrev: page > 1
-      }
-    }, "Produce items retrieved successfully")
+    new ApiResponse(200, result, "Produce items retrieved successfully")
   );
 });
 
@@ -223,88 +311,98 @@ const updateProducePrice = asyncHandler(async (req, res) => {
   );
 });
 
-// Get marketplace statistics
+// Enhanced marketplace stats with aggregation
 const getMarketplaceStats = asyncHandler(async (req, res) => {
   const stats = await ProduceItem.aggregate([
     {
-      $group: {
-        _id: null,
-        totalProducts: { $sum: 1 },
-        availableProducts: { 
-          $sum: { 
-            $cond: [{ $eq: ["$isAvailable", true] }, 1, 0] 
+      $facet: {
+        // Basic counts
+        basicStats: [
+          {
+            $group: {
+              _id: null,
+              totalProducts: { $sum: 1 },
+              availableProducts: { 
+                $sum: { 
+                  $cond: [{ $eq: ["$isAvailable", true] }, 1, 0] 
+                }
+              },
+              soldProducts: { 
+                $sum: { 
+                  $cond: [{ $eq: ["$currentStatus", "Sold"] }, 1, 0] 
+                }
+              },
+              totalViews: { $sum: "$views" },
+              averagePrice: { $avg: { $toDouble: "$priceInWei" } }
+            }
           }
-        },
-        soldProducts: { 
-          $sum: { 
-            $cond: [{ $eq: ["$currentStatus", "Sold"] }, 1, 0] 
+        ],
+        // Farmer stats
+        farmerStats: [
+          {
+            $group: {
+              _id: "$farmerAddress",
+              productsCount: { $sum: 1 },
+              soldCount: { 
+                $sum: { 
+                  $cond: [{ $eq: ["$currentStatus", "Sold"] }, 1, 0] 
+                }
+              }
+            }
+          },
+          {
+            $group: {
+              _id: null,
+              totalFarmers: { $sum: 1 },
+              averageProductsPerFarmer: { $avg: "$productsCount" }
+            }
           }
-        },
-        totalFarmers: { $addToSet: "$farmerAddress" },
-        averagePrice: { $avg: "$priceInWei" }
-      }
-    },
-    {
-      $project: {
-        _id: 0,
-        totalProducts: 1,
-        availableProducts: 1,
-        soldProducts: 1,
-        totalFarmers: { $size: "$totalFarmers" },
-        averagePrice: { $round: ["$averagePrice", 0] }
+        ],
+        // Category distribution
+        categoryStats: [
+          {
+            $group: {
+              _id: "$name",
+              count: { $sum: 1 },
+              averagePrice: { $avg: { $toDouble: "$priceInWei" } }
+            }
+          },
+          { $sort: { count: -1 } },
+          { $limit: 10 }
+        ],
+        // Recent activity
+        recentActivity: [
+          { $sort: { createdAt: -1 } },
+          { $limit: 5 },
+          {
+            $project: {
+              name: 1,
+              originFarm: 1,
+              currentStatus: 1,
+              createdAt: 1
+            }
+          }
+        ]
       }
     }
   ]);
 
+  const formattedStats = {
+    ...stats[0].basicStats[0],
+    farmers: stats[0].farmerStats[0] || { totalFarmers: 0, averageProductsPerFarmer: 0 },
+    topCategories: stats[0].categoryStats,
+    recentActivity: stats[0].recentActivity,
+    averagePriceEth: stats[0].basicStats[0]?.averagePrice 
+      ? (stats[0].basicStats[0].averagePrice / Math.pow(10, 18)).toFixed(4)
+      : '0'
+  };
+
   return res.status(200).json(
-    new ApiResponse(200, stats[0] || {
-      totalProducts: 0,
-      availableProducts: 0,
-      soldProducts: 0,
-      totalFarmers: 0,
-      averagePrice: 0
-    }, "Marketplace statistics retrieved successfully")
+    new ApiResponse(200, formattedStats, "Enhanced marketplace statistics retrieved successfully")
   );
 });
 
-// Get featured produce for homepage
-const getFeaturedProduce = asyncHandler(async (req, res) => {
-  const featuredItems = await ProduceItem.find({ 
-    isAvailable: true, 
-    currentStatus: { $ne: 'Sold' } 
-  })
-    .sort({ createdAt: -1 })
-    .limit(6)
-    .select('-__v');
-
-  return res.status(200).json(
-    new ApiResponse(200, featuredItems, "Featured produce retrieved successfully")
-  );
-});
-
-// Increment product view count
-const incrementProductView = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-
-  const produceItem = await ProduceItem.findOne({ 
-    $or: [
-      { _id: id },
-      { blockchainId: id },
-      { id: parseInt(id) || 0 }
-    ]
-  });
-
-  if (produceItem) {
-    produceItem.views = (produceItem.views || 0) + 1;
-    await produceItem.save();
-  }
-
-  return res.status(200).json(
-    new ApiResponse(200, { views: produceItem?.views || 0 }, "View count updated")
-  );
-});
-
-// Get search suggestions
+// Enhanced search suggestions with aggregation
 const getSearchSuggestions = asyncHandler(async (req, res) => {
   const { q } = req.query;
 
@@ -325,34 +423,84 @@ const getSearchSuggestions = asyncHandler(async (req, res) => {
       }
     },
     {
-      $group: {
-        _id: null,
-        names: { $addToSet: "$name" },
-        farms: { $addToSet: "$originFarm" },
-        farmers: { $addToSet: "$originalFarmer" }
+      $facet: {
+        productNames: [
+          { $group: { _id: "$name", count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+          { $limit: 5 },
+          { $project: { suggestion: "$_id", type: { $literal: "product" }, count: 1 } }
+        ],
+        farmNames: [
+          { $group: { _id: "$originFarm", count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+          { $limit: 5 },
+          { $project: { suggestion: "$_id", type: { $literal: "farm" }, count: 1 } }
+        ],
+        farmerNames: [
+          { $group: { _id: "$originalFarmer", count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+          { $limit: 3 },
+          { $project: { suggestion: "$_id", type: { $literal: "farmer" }, count: 1 } }
+        ]
       }
     },
     {
       $project: {
-        _id: 0,
-        suggestions: { 
-          $concatArrays: [
-            { $slice: ["$names", 5] },
-            { $slice: ["$farms", 5] },
-            { $slice: ["$farmers", 5] }
-          ]
+        suggestions: {
+          $concatArrays: ["$productNames", "$farmNames", "$farmerNames"]
         }
       }
     }
   ]);
 
   return res.status(200).json(
-    new ApiResponse(200, suggestions[0]?.suggestions || [], "Search suggestions retrieved")
+    new ApiResponse(200, suggestions[0]?.suggestions || [], "Enhanced search suggestions retrieved")
   );
 });
 
-// Mark produce as sold and update database (called by transaction controller)
-const markProduceAsSold = asyncHandler(async (produceId, buyerAddress, saleTransactionHash) => {
+// Validate purchase eligibility
+const validatePurchaseEligibility = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+  const userRole = req.user.role;
+
+  // Check if user is a customer
+  if (userRole !== 'customer') {
+    throw new ApiError(403, "Only customers can purchase produce. Farmers cannot buy from other farmers.");
+  }
+
+  // Get produce details
+  const produceItem = await ProduceItem.findOne({ 
+    $or: [
+      { blockchainId: id },
+      { id: parseInt(id) || 0 }
+    ]
+  });
+
+  if (!produceItem) {
+    throw new ApiError(404, "Produce item not found");
+  }
+
+  // Check if produce is available
+  if (!produceItem.isAvailable || produceItem.currentStatus === 'Sold') {
+    throw new ApiError(400, "This produce is no longer available for purchase");
+  }
+
+  // Check if farmer is trying to buy their own produce
+  if (produceItem.farmerAddress.toString() === userId.toString()) {
+    throw new ApiError(403, "You cannot purchase your own produce");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200, {
+      eligible: true,
+      produceItem
+    }, "Purchase eligibility confirmed")
+  );
+});
+
+// Update the existing markProduceAsSold function to include role validation
+const markProduceAsSold = asyncHandler(async (produceId, buyerAddress, saleTransactionHash, buyerUserId) => {
   const produceItem = await ProduceItem.findOne({ 
     $or: [
       { blockchainId: produceId },
@@ -362,6 +510,11 @@ const markProduceAsSold = asyncHandler(async (produceId, buyerAddress, saleTrans
 
   if (!produceItem) {
     throw new ApiError(404, "Produce item not found");
+  }
+
+  // Additional validation: ensure buyer is not the farmer
+  if (buyerUserId && produceItem.farmerAddress.toString() === buyerUserId.toString()) {
+    throw new ApiError(403, "Farmer cannot purchase their own produce");
   }
 
   // Update the produce status to sold
@@ -403,5 +556,6 @@ export {
   incrementProductView,
   getSearchSuggestions,
   markProduceAsSold,
-  removeSoldProduce
+  removeSoldProduce,
+  validatePurchaseEligibility
 };

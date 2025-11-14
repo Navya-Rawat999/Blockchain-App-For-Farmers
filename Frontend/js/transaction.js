@@ -47,6 +47,14 @@ async function initializeTransaction(productId) {
       return;
     }
 
+    // Validate user role and purchase eligibility
+    try {
+      await utils.apiCall(`/api/v1/produce/${productId}/validate-purchase`);
+    } catch (validationError) {
+      showError(validationError.message || 'You are not eligible to purchase this produce');
+      return;
+    }
+
     const contract = centralizedWallet.getContract(CONTRACT_ABI);
     if (!contract) {
       throw new Error('Unable to connect to smart contract');

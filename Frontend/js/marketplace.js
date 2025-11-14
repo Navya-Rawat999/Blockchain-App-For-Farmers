@@ -9,7 +9,8 @@ let totalPages = 1;
 let cart = [];
 
 // Load all products from database
-async function loadProducts(page = 1, search = '', status = 'available') {
+// Enhanced load products with filtering
+async function loadProducts(page = 1, search = '', status = 'available', filters = {}) {
   const grid = document.getElementById('products-grid');
   grid.innerHTML = '<p style="color: var(--text-secondary); grid-column: 1/-1; text-align: center;">Loading products...</p>';
 
@@ -19,8 +20,12 @@ async function loadProducts(page = 1, search = '', status = 'available') {
       limit: 12,
       search: search,
       status: status,
-      sortBy: 'createdAt',
-      sortOrder: 'desc'
+      sortBy: filters.sortBy || 'createdAt',
+      sortOrder: filters.sortOrder || 'desc',
+      minPrice: filters.minPrice || '',
+      maxPrice: filters.maxPrice || '',
+      farmLocation: filters.farmLocation || '',
+      farmer: filters.farmer || ''
     });
 
     const response = await utils.apiCall(`/api/v1/produce/marketplace?${searchParams}`, {
@@ -29,11 +34,20 @@ async function loadProducts(page = 1, search = '', status = 'available') {
 
     if (response.success) {
       allProducts = response.data.items || [];
-      currentPage = response.data.pagination.currentPage;
-      totalPages = response.data.pagination.totalPages;
+      currentPage = response.data.currentPage;
+      totalPages = response.data.totalPages;
       
       displayProducts(allProducts);
-      updatePagination(response.data.pagination);
+      updatePagination({
+        currentPage: response.data.currentPage,
+        totalPages: response.data.totalPages,
+        hasNext: response.data.hasNext,
+        hasPrev: response.data.hasPrev,
+        totalItems: response.data.totalItems
+      });
+
+      // Update stats display
+      updateStatsDisplay(response.data);
     } else {
       throw new Error(response.message || 'Failed to load products');
     }
@@ -50,6 +64,7 @@ async function loadProducts(page = 1, search = '', status = 'available') {
 }
 
 // Display products in grid
+// Enhanced display products with farmer info and additional details
 function displayProducts(products) {
   const grid = document.getElementById('products-grid');
 
@@ -65,7 +80,7 @@ function displayProducts(products) {
   }
 
   const productsHTML = products.map(product => {
-    const priceInEth = ethers.formatEther(product.priceInWei || '0');
+    const priceInEth = product.priceInEth || ethers.formatEther(product.priceInWei || '0');
     const isAvailable = product.isAvailable && product.currentStatus !== 'Sold';
     const statusClass = isAvailable ? 'status-available' : 'status-sold';
     const date = new Date(product.createdAt);
@@ -79,7 +94,14 @@ function displayProducts(products) {
     return `
       <div class="product-card">
         <div class="product-image">
-          🌾
+          ${product.produceImage ? `
+            <img src="${product.produceImage}" alt="${product.name}" 
+                 style="width: 100%; height: 200px; object-fit: cover; border-radius: 0.5rem;">
+          ` : `
+            <div style="width: 100%; height: 200px; display: flex; align-items: center; justify-content: center; background: var(--bg-secondary); border-radius: 0.5rem;">
+              <span style="font-size: 3rem;">🌾</span>
+            </div>
+          `}
         </div>
         
         <div class="product-header">
@@ -96,24 +118,26 @@ function displayProducts(products) {
           </div>
         ` : ''}
 
+        ${product.farmerInfo ? `
+          <div class="farmer-info" style="margin: 0.5rem 0; padding: 0.5rem; background: rgba(0,0,0,0.1); border-radius: 0.25rem;">
+            <small style="color: var(--text-secondary);">
+              👨‍🌾 ${product.farmerInfo.fullName || product.farmerInfo.username}
+            </small>
+          </div>
+        ` : ''}
+
         <div class="product-details">
           <div class="detail-row">
             <span class="detail-label">Origin:</span>
             <span class="detail-value">${product.originFarm}</span>
           </div>
           <div class="detail-row">
-            <span class="detail-label">Farmer:</span>
-            <span class="detail-value farmer-address">
-              ${product.originalFarmer ? `${product.originalFarmer.slice(0, 8)}...` : 'Unknown'}
-            </span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">QR Code:</span>
-            <span class="detail-value">${product.qrCode || 'N/A'}</span>
+            <span class="detail-label">Views:</span>
+            <span class="detail-value">${product.views || 0} 👁️</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Listed:</span>
-            <span class="detail-value">${date.toLocaleDateString()}</span>
+            <span class="detail-value">${product.daysSinceRegistration || 0} days ago</span>
           </div>
         </div>
 
@@ -354,6 +378,19 @@ function clearCart() {
     cart = [];
     saveCart();
     utils.showAlert('Cart cleared!', 'success');
+  }
+}
+
+// New function to update stats display
+function updateStatsDisplay(data) {
+  const statsEl = document.getElementById('marketplace-stats');
+  if (statsEl && data.totalItems !== undefined) {
+    statsEl.innerHTML = `
+      <div style="display: flex; gap: 1rem; justify-content: center; margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+        <span>📦 ${data.totalItems} total items</span>
+        <span>📄 Page ${data.currentPage} of ${data.totalPages}</span>
+      </div>
+    `;
   }
 }
 

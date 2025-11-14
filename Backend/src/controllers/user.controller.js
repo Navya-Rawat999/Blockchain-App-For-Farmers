@@ -1,4 +1,5 @@
 import { User, Farmer, Customer } from "../models/user.models.js"
+import { TransactionHistory } from "../models/transactionHistory.models.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { cookie_options } from "../constants.js"
 import { asyncHandler } from '../utils/asyncHandler.js'
@@ -6,7 +7,6 @@ import { ApiResponse } from '../utils/ApiResponse.js'
 import { ApiError } from '../utils/ApiError.js'
 import mongoose from "mongoose"
 import jwt from "jsonwebtoken"
-import { TransactionHistory } from "../models/transactionHistory.models.js"
 
 
 const generateRefreshAndAccessTokens = async(userId) => {

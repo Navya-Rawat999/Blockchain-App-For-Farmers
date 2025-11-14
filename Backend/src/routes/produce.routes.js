@@ -9,9 +9,11 @@ import {
   getMarketplaceStats,
   getFeaturedProduce,
   incrementProductView,
-  getSearchSuggestions
+  getSearchSuggestions,
+  validatePurchaseEligibility
 } from '../controllers/produce.controller.js'
 import { verifyJWT } from '../middleware/auth.middleware.js'
+import { upload } from '../middleware/multer.middleware.js'
 
 const router = Router()
 
@@ -24,10 +26,17 @@ router.route("/:id").get(getProduceById)
 router.route("/:id/view").post(incrementProductView)
 
 // Protected routes (authentication required)
-router.route("/register").post(verifyJWT, registerProduce)
+router.route("/register").post(
+  verifyJWT, 
+  upload.single("produceImage"), 
+  registerProduce
+)
 router.route("/my-produce").get(verifyJWT, getFarmerProduce)
 router.route("/:id/status").patch(verifyJWT, updateProduceStatus)
 router.route("/:id/price").patch(verifyJWT, updateProducePrice)
+
+// Purchase validation route
+router.route("/:id/validate-purchase").get(verifyJWT, validatePurchaseEligibility)
 
 // Review routes (future API integration)
 router.route("/:id/review").post(verifyJWT, (req, res) => {
