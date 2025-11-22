@@ -17,6 +17,10 @@ const PORT = process.env.PORT;
 app.use('/css', express.static(path.join(__dirname, 'css')));
 app.use('/js', express.static(path.join(__dirname, 'js')));
 app.use('/HTML', express.static(path.join(__dirname, 'HTML')));
+app.use('/images', express.static(path.join(__dirname, 'images')));
+
+// Serve constants.js from root
+app.use(express.static(path.join(__dirname)));
 
 // Serve HTML files from root for easier navigation
 app.use(express.static(path.join(__dirname, 'HTML')));

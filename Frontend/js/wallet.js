@@ -2,6 +2,7 @@ import utils from './utils.js';
 import { ethers } from 'ethers';
 import { CONTRACT_ABI } from '../constants.js';
 
+const runtimeEnv = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : (window.__APP_CONFIG__ || {});
 
 
 class CentralizedWallet {
@@ -27,7 +28,7 @@ class CentralizedWallet {
         symbol: 'ETH',
         decimals: 18
       },
-      rpcUrls: [import.meta.env.SEPOLIA_RPC_URL],
+      rpcUrls: [runtimeEnv?.SEPOLIA_RPC_URL || 'https://rpc.sepolia.org'],
       blockExplorerUrls: ['https://sepolia.etherscan.io/']
     };
 
@@ -289,6 +290,30 @@ class CentralizedWallet {
       });
     } catch (error) {
       console.error('Error saving wallet to backend:', error);
+    }
+  }
+
+  async copyAddress() {
+    if (!this.userAddress) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(this.userAddress);
+      } else {
+        const tempInput = document.createElement('input');
+        tempInput.value = this.userAddress;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+      }
+      if (typeof utils !== 'undefined' && utils.showAlert) {
+        utils.showAlert('Wallet address copied to clipboard', 'success');
+      }
+    } catch (error) {
+      console.error('Failed to copy address:', error);
+      if (typeof utils !== 'undefined' && utils.showAlert) {
+        utils.showAlert('Unable to copy address', 'error');
+      }
     }
   }
 }

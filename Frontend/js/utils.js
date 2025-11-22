@@ -1,15 +1,65 @@
-import axios from 'axios';
+// Use fetch API with axios-like interface to avoid module resolution issues
+// This completely bypasses any axios module resolution
 
-// API Configuration - Use Vite environment variables
-const API_BASE = import.meta.env.BACKEND_API_BASE_URL || 'http://localhost:8000/api/v1';
+// API Configuration
+const API_BASE = import.meta?.env?.BACKEND_API_BASE_URL || 'http://localhost:8000/api/v1';
 
-// Configure axios defaults
-axios.defaults.baseURL = API_BASE;
-axios.defaults.withCredentials = true;
+// Create axios-like interface using fetch
+const createAxiosInterface = () => {
+  const instance = async (config) => {
+    const { url, method = 'GET', data, headers = {} } = config;
+    
+    const fetchConfig = {
+      method: method.toUpperCase(),
+      credentials: 'include', // equivalent to withCredentials: true
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers
+      }
+    };
+
+    if (data) {
+      if (data instanceof FormData) {
+        fetchConfig.body = data;
+        delete fetchConfig.headers['Content-Type']; // Let browser set it for FormData
+      } else {
+        fetchConfig.body = typeof data === 'string' ? data : JSON.stringify(data);
+      }
+    }
+
+    const response = await fetch(url, fetchConfig);
+    
+    if (!response.ok) {
+      const errorData = await response.text();
+      let errorMessage;
+      try {
+        const parsed = JSON.parse(errorData);
+        errorMessage = parsed.message || `HTTP error! status: ${response.status}`;
+      } catch {
+        errorMessage = errorData || `HTTP error! status: ${response.status}`;
+      }
+      throw new Error(errorMessage);
+    }
+
+    const result = await response.json();
+    return { data: result };
+  };
+
+  // Add default properties
+  instance.defaults = {
+    baseURL: API_BASE,
+    withCredentials: true
+  };
+
+  return instance;
+};
+
+// Create the axios-like instance
+const axios = window.axios || createAxiosInterface();
 
 // Utility Functions
 const utils = {
-  // API call helper using axios
+  // API call helper using our axios-like interface
   async apiCall(endpoint, options = {}) {
     try {
       const { method = 'GET', body, headers = {}, ...otherOptions } = options;
@@ -23,9 +73,12 @@ const utils = {
         headers['Authorization'] = `Bearer ${token}`;
       }
       
+      // Construct full URL
+      const fullUrl = `${API_BASE}${cleanEndpoint}`;
+      
       const config = {
+        url: fullUrl,
         method,
-        url: cleanEndpoint,
         headers: { ...headers },
         ...otherOptions
       };
@@ -33,7 +86,6 @@ const utils = {
       // Handle different body types
       if (body instanceof FormData) {
         config.data = body;
-        // Don't set Content-Type for FormData - let axios set it with boundary
       } else if (body) {
         config.data = typeof body === 'string' ? JSON.parse(body) : body;
         config.headers['Content-Type'] = 'application/json';
@@ -42,14 +94,11 @@ const utils = {
       const response = await axios(config);
       return response.data;
     } catch (error) {
-      if (error.response) {
-        // Server responded with error status
-        throw new Error(error.response.data.message || `HTTP error! status: ${error.response.status}`);
-      } else if (error.request) {
-        // Request was made but no response received
-        throw new Error('Network error: Unable to reach server');
+      // Handle fetch errors or our custom errors
+      if (error.message.includes('HTTP error!') || error.message.includes('Network error')) {
+        throw error;
       } else {
-        // Something else happened
+        // Generic error handling
         throw new Error(error.message || 'An unexpected error occurred');
       }
     }
@@ -57,15 +106,15 @@ const utils = {
 
   // Auth helpers
   saveAuthToken(token) {
-    localStorage.setItem('accessToken', token);
+    localStorage.setItem('AccessToken', token);
   },
 
   getAuthToken() {
-    return localStorage.getItem('accessToken');
+    return localStorage.getItem('AccessToken');
   },
 
   clearAuthToken() {
-    localStorage.removeItem('accessToken');
+    localStorage.removeItem('AccessToken');
   },
 
   // Refresh access token using refresh token from cookies
@@ -78,7 +127,7 @@ const utils = {
       }
       return false;
     } catch (error) {
-      console.error('Token refresh failed:', error);
+      // Silently fail - this is expected when not logged in
       return false;
     }
   },
@@ -86,10 +135,16 @@ const utils = {
   // Check authentication by verifying current-user endpoint which uses cookies
   async checkAuth() {
     try {
-      // First, try to refresh the access token using refresh token from cookies
-      await this.refreshAccessToken();
+      // Only try to refresh if we have an existing token or user
+      const existingToken = this.getAuthToken();
+      const existingUser = this.getUser();
       
-      // Then fetch current user
+      if (existingToken || existingUser) {
+        // Try to refresh the access token using refresh token from cookies
+        await this.refreshAccessToken();
+      }
+      
+      // Try to fetch current user
       const res = await this.apiCall('/users/current-user', { method: 'GET' });
       const user = res?.data || null;
       if (user) {
@@ -97,11 +152,12 @@ const utils = {
         return true;
       }
       this.clearUser();
+      this.clearAuthToken();
       return false;
     } catch (err) {
-      // Not authenticated or network error
-      console.error('Auth check failed:', err);
+      // Not authenticated or network error - clear everything
       this.clearUser();
+      this.clearAuthToken();
       return false;
     }
   },

@@ -7,145 +7,252 @@
   <link rel="stylesheet" href="../css/main.css">
   <link rel="stylesheet" href="../css/navbar.css">
   <link rel="stylesheet" href="../css/homepage.css">
+  <!-- Add axios CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
 </head>
 <body>
   <!-- Navigation -->
   <nav id="navbar"></nav>
 
-  <!-- Hero Section -->
-  <section class="hero">
-    <div class="container">
-      <div class="hero-content">
-        <div class="hero-text">
-          <h1 class="hero-title">
-            🌾 Transparent Agriculture <br>
-            <span class="gradient-text">Powered by Blockchain</span>
+  <main class="landing">
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+      <div class="container hero-grid">
+        <div class="hero-copy" data-animate="fade-up">
+          <p class="eyebrow">India’s first blockchain-native agri marketplace</p>
+          <h1>
+            Empower every harvest with
+            <span class="gradient-text">trust, traceability & tokens.</span>
           </h1>
           <p class="hero-description">
-            Connect farmers directly with customers through secure, transparent, 
-            and traceable produce transactions on the blockchain.
+            Kissan Sathi connects farmers, cooperatives, and conscious customers through a transparent
+            supply chain where every crop is verified, every payment is instant, and every story is told.
           </p>
-          <div class="hero-buttons">
-            <a href="register.html" class="btn btn-primary btn-large">
-              🚀 Get Started
-            </a>
-            <!-- Wallet button only shown for logged-in users -->
-            <a href="wallet.html" class="btn btn-outline btn-large wallet-btn" style="display: none;">
-              🦊 Connect Wallet
-            </a>
-            <!-- Login button shown for non-authenticated users -->
-            <a href="login.html" class="btn btn-outline btn-large login-btn">
-              🔐 Login to Connect Wallet
-            </a>
+          <div class="hero-actions">
+            <a href="register.html" class="btn btn-primary btn-large">🚀 Start trading</a>
+            <a href="wallet.html" class="btn btn-ghost btn-large wallet-btn" style="display: none;">🦊 Connect Wallet</a>
+            <a href="login.html" class="btn btn-outline btn-large login-btn">🔐 Login to connect</a>
+          </div>
+          <div class="hero-stats">
+            <div class="stat">
+              <span>1.2K+</span>
+              <p>Verified farmers onboarding produce weekly</p>
+            </div>
+            <div class="stat">
+              <span>45K</span>
+              <p>End-to-end traceable deliveries across India</p>
+            </div>
+            <div class="stat">
+              <span>₹18Cr+</span>
+              <p>Value secured via smart contracts</p>
+            </div>
           </div>
         </div>
-        
-        <div class="hero-image">
-          <div class="blockchain-visualization">
-            <div class="block">🌾</div>
-            <div class="block">⛓️</div>
-            <div class="block">🛒</div>
+  <div class="hero-media" data-animate="fade-left">
+          <figure class="media-card">
+            <img src="../images/project_logo.jpg" alt="Kissan Sathi project visual" loading="lazy">
+            <figcaption>Project Kissan Sathi • Farm-to-Fork Ledger</figcaption>
+          </figure>
+          <div class="media-badges">
+            <article>
+              <h4>College Partner</h4>
+              <img src="../images/College_logo.png" alt="College logo" loading="lazy">
+            </article>
+            <article>
+              <h4>University Live Lab</h4>
+              <img src="../images/University_logo.png" alt="University logo" loading="lazy">
+            </article>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Features Section -->
-  <section class="features" id="features">
-    <div class="container">
-      <h2 class="section-title">Why Choose Kissan Sathi?</h2>
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">🔗</div>
-          <h3>Blockchain Security</h3>
-          <p>Immutable records ensure complete transparency and prevent fraud in the supply chain.</p>
-        </div>
-        
-        <div class="feature-card">
-          <div class="feature-icon">🧑‍🌾</div>
-          <h3>Direct Farm Connection</h3>
-          <p>Farmers can sell directly to customers, eliminating middlemen and increasing profits.</p>
-        </div>
-        
-        <div class="feature-card">
-          <div class="feature-icon">📱</div>
-          <h3>QR Code Verification</h3>
-          <p>Scan QR codes to instantly verify the authenticity and origin of your produce.</p>
-        </div>
-        
-        <div class="feature-card">
-          <div class="feature-icon">💰</div>
-          <h3>Cryptocurrency Payments</h3>
-          <p>Secure and fast payments using Ethereum, ensuring quick settlements for farmers.</p>
-        </div>
-        
-        <div class="feature-card">
-          <div class="feature-icon">📊</div>
-          <h3>Analytics Dashboard</h3>
-          <p>Track sales, revenue, and customer feedback to optimize farming operations.</p>
+    <!-- Logo Cloud -->
+  <section class="logo-cloud" aria-label="Partner logos" data-animate="fade-up">
+      <div class="container">
+        <p>Backed by academic innovation and farmer cooperatives</p>
+        <div class="logo-row">
+          <img src="../images/project_logo.jpg" alt="Project logo" loading="lazy">
+          <img src="../images/College_logo.png" alt="College logo" loading="lazy">
+          <img src="../images/University_logo.png" alt="University logo" loading="lazy">
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- How It Works Section -->
-  <section class="how-it-works" id="how-it-works">
-    <div class="container">
-      <h2 class="section-title">How It Works</h2>
-      <div class="steps">
-        <div class="step">
-          <div class="step-number">1</div>
-          <div class="step-content">
-            <h3>📝 Register Account</h3>
-            <p>Create your account as a farmer or customer to get started.</p>
-          </div>
-        </div>
-        
-        <div class="step">
-          <div class="step-number">2</div>
-          <div class="step-content">
-            <h3>🦊 Connect Wallet</h3>
-            <p>Connect your MetaMask wallet to start trading on the blockchain.</p>
-          </div>
-        </div>
-        
-        <div class="step">
-          <div class="step-number">3</div>
-          <div class="step-content">
-            <h3>🧑‍🌾 Register Produce</h3>
-            <p>Farmers register their produce with details like origin, price, and QR codes.</p>
-          </div>
-        </div>
-        
-        <div class="step">
-          <div class="step-number">4</div>
-          <div class="step-content">
-            <h3>🛒 Browse & Buy</h3>
-            <p>Customers can browse available produce and make secure blockchain purchases.</p>
-          </div>
-        </div>
+    <!-- Metrics -->
+    <section class="metrics">
+      <div class="container metrics-grid">
+        <article class="metric-card" data-animate="scale-in">
+          <span class="metric-label">Smart contracts executed</span>
+          <span class="metric-value">8,540+</span>
+          <p>Every shipment notarized on-chain to prevent tampering.</p>
+        </article>
+  <article class="metric-card" data-animate="scale-in">
+          <span class="metric-label">Average payout time</span>
+          <span class="metric-value">38 min</span>
+          <p>Instant settlements straight to MetaMask or custodial wallets.</p>
+        </article>
+  <article class="metric-card" data-animate="scale-in">
+          <span class="metric-label">Produce authenticity</span>
+          <span class="metric-value">99.4%</span>
+          <p>QR tracebacks with GPS plots, lab reports, and cold-chain proof.</p>
+        </article>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- CTA Section -->
-  <section class="cta">
-    <div class="container">
-      <div class="cta-content">
-        <h2>Ready to Join the Revolution?</h2>
-        <p>Start your journey towards transparent and secure agriculture trading today.</p>
-        <div class="cta-buttons">
-          <a href="register.html?role=farmer" class="btn btn-primary btn-large">
-            🧑‍🌾 Join as Farmer
-          </a>
-          <a href="register.html?role=customer" class="btn btn-outline btn-large">
-            🛒 Join as Customer
-          </a>
+    <!-- Features Section -->
+    <section class="features feature-tiles" id="features">
+      <div class="container">
+        <div class="section-heading">
+          <p class="eyebrow">Platform superpowers</p>
+          <h2>Everything you need to modernize the agri-trade lifecycle.</h2>
+        </div>
+        <div class="features-grid">
+          <article class="feature-card" data-animate="fade-up">
+            <h3>Blockchain Security</h3>
+            <p>Immutable ledgers and notarized deliveries stop middlemen fraud and data tampering.</p>
+            <span>🔗 Smart-contract backed</span>
+          </article>
+          <article class="feature-card" data-animate="fade-up">
+            <h3>Direct Farm Connection</h3>
+            <p>Showcase crop health, soil metrics, and community ratings to premium buyers instantly.</p>
+            <span>🧑‍🌾 Farmer storefronts</span>
+          </article>
+          <article class="feature-card" data-animate="fade-up">
+            <h3>QR Code Verification</h3>
+            <p>Each crate carries a scannable story—origin, logistics, and certification documents.</p>
+            <span>📱 Progressive Web Scanner</span>
+          </article>
+          <article class="feature-card" data-animate="fade-up">
+            <h3>Crypto & INR Settlements</h3>
+            <p>Dual rails with automatic FX so cooperatives can cash out in minutes.</p>
+            <span>💰 Fiat & token rails</span>
+          </article>
+          <article class="feature-card" data-animate="fade-up">
+            <h3>Intelligence Dashboard</h3>
+            <p>Detect demand spikes, predict spoilage risk, and trigger hedging strategies.</p>
+            <span>📊 Insight engine</span>
+          </article>
+          <article class="feature-card" data-animate="fade-up">
+            <h3>Compliance Vault</h3>
+            <p>Digitize FSSAI docs, lab tests, and sustainability metrics in one secure vault.</p>
+            <span>🗂️ Zero paperwork</span>
+          </article>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
+
+    <!-- Journey Section -->
+    <section class="journey" id="how-it-works">
+      <div class="container">
+        <div class="section-heading">
+          <p class="eyebrow">How it works</p>
+          <h2>Launch in four intuitive steps.</h2>
+        </div>
+        <ol class="journey-steps">
+          <li data-animate="fade-up">
+            <div class="step-chip">01</div>
+            <div>
+              <h3>Register & verify</h3>
+              <p>Create farmer or customer profiles, upload KYC, and onboard fields in minutes.</p>
+            </div>
+          </li>
+          <li data-animate="fade-up">
+            <div class="step-chip">02</div>
+            <div>
+              <h3>Connect MetaMask</h3>
+              <p>Add your wallet or enable custodial mode. We handle gas and settlement routing.</p>
+            </div>
+          </li>
+          <li data-animate="fade-up">
+            <div class="step-chip">03</div>
+            <div>
+              <h3>Tokenize produce</h3>
+              <p>Register harvest data, QR codes, and logistics checkpoints directly from the field.</p>
+            </div>
+          </li>
+          <li data-animate="fade-up">
+            <div class="step-chip">04</div>
+            <div>
+              <h3>Buy, scan, repeat</h3>
+              <p>Customers browse live inventory, pay securely, and verify authenticity in-store.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Produce Showcase -->
+    <section class="market-grid" id="market-preview">
+      <div class="container">
+        <div class="section-heading">
+          <p class="eyebrow">Live marketplace preview</p>
+          <h2>Curated drops updated in real time.</h2>
+        </div>
+        <div class="product-grid">
+          <article class="product-card" data-animate="fade-up">
+            <p class="tag">Organic</p>
+            <h3>Alphonso Mango Lots</h3>
+            <p>Trace to Ratnagiri orchards with pesticide free certification and cold-chain proof.</p>
+            <div class="product-meta">
+              <span>QR integrity 100%</span>
+              <span>₹780 / crate</span>
+            </div>
+          </article>
+          <article class="product-card" data-animate="fade-up">
+            <p class="tag">Hydroponic</p>
+            <h3>Leafy Greens Pods</h3>
+            <p>Delivered within 12 hours of harvest with nutrient logs and water analytics.</p>
+            <div class="product-meta">
+              <span>QR integrity 99%</span>
+              <span>₹220 / kg</span>
+            </div>
+          </article>
+          <article class="product-card" data-animate="fade-up">
+            <p class="tag">Fair Trade</p>
+            <h3>Arabica Coffee Bags</h3>
+            <p>Cooperative-backed beans roasted to order, complete with carbon offsets.</p>
+            <div class="product-meta">
+              <span>QR integrity 98%</span>
+              <span>₹1,150 / bag</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Testimonial -->
+    <section class="testimonial">
+      <div class="container testimonial-card" data-animate="scale-in">
+        <div>
+          <p class="eyebrow">Customer love</p>
+          <h2>“We reduced spoilage by 27% and pay farmers the same day.”</h2>
+          <p class="hero-description">FreshBasket Retail • Bengaluru</p>
+        </div>
+        <div class="quote">
+          <p>Kissan Sathi unifies compliance, payments, and storytelling. QR scanning in our stores lets
+            shoppers meet the farmer virtually and watch the entire cold-chain playback.</p>
+          <span>— Riya Sharma, Supply Chain Head</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dual CTA -->
+    <section class="cta dual-cta">
+      <div class="container cta-grid">
+        <article data-animate="fade-up">
+          <h3>🧑‍🌾 Farmers & FPOs</h3>
+          <p>Tokenize stock, price dynamically, and unlock premium buyers.</p>
+          <a href="register.html?role=farmer" class="btn btn-primary btn-large">Join as Farmer</a>
+        </article>
+  <article data-animate="fade-up">
+          <h3>🛒 Buyers & Retailers</h3>
+          <p>Offer irrefutable provenance and settle payments instantly.</p>
+          <a href="register.html?role=customer" class="btn btn-outline btn-large">Join as Customer</a>
+        </article>
+      </div>
+    </section>
+  </main>
 
   <!-- Footer -->
   <footer class="footer">
@@ -153,19 +260,16 @@
       <div class="footer-content">
         <div class="footer-section">
           <h3>🌾 Kissan Sathi</h3>
-          <p>Connecting farmers and customers through blockchain technology for a transparent agricultural future.</p>
+          <p>Transparent farm-to-fork journeys built on blockchain, IoT tracking, and ethical payouts.</p>
         </div>
-        
         <div class="footer-section">
-          <h4>Quick Links</h4>
+          <h4>Navigate</h4>
           <ul>
             <li><a href="#features">Features</a></li>
-            <li><a href="#how-it-works">How It Works</a></li>
-            <li><a href="register.html">Register</a></li>
-            <li><a href="login.html">Login</a></li>
+            <li><a href="#how-it-works">How it works</a></li>
+            <li><a href="#market-preview">Marketplace</a></li>
           </ul>
         </div>
-        
         <div class="footer-section">
           <h4>For Farmers</h4>
           <ul>
@@ -174,19 +278,17 @@
             <li><a href="wallet.html">Wallet</a></li>
           </ul>
         </div>
-        
         <div class="footer-section">
           <h4>For Customers</h4>
           <ul>
             <li><a href="customer.html">Dashboard</a></li>
             <li><a href="marketplace.html">Marketplace</a></li>
-            <li><a href="profile.html">Profile</a></li>
+            <li><a href="scan.html">Scan QR</a></li>
           </ul>
         </div>
       </div>
-      
       <div class="footer-bottom">
-        <p>&copy; 2025 Kissan Sathi. Built for transparent agriculture. Powered by Blockchain.</p>
+        <p>&copy; 2025 Kissan Sathi. Designed with ❤️ for farmers everywhere.</p>
       </div>
     </div>
   </footer>

@@ -5,25 +5,9 @@ import { ethers } from 'ethers';
 // Contract address - should be the same as in wallet.js
 const CONTRACT_ADDRESS = '0x742d35Cc6135C4Ad4C006C8C704aC8DC7CE18F72'; // Update with actual address
 
-// Check authentication when the script loads
-document.addEventListener('DOMContentLoaded', async () => {
-  const isAuthenticated = await utils.checkAuth();
-  if (!isAuthenticated) {
-    window.location.href = '/HTML/login.html';
-    return;
-  }
-  initScanner();
-});
-
 // QR Code Scanner
 let html5QrcodeScanner = null;
 let provider = null;
-
-// Initialize the scanner and setup
-async function initScanner() {
-  await initWeb3();
-  startQRScanner();
-}
 
 // Initialize Web3 connection
 async function initWeb3() {
@@ -42,7 +26,17 @@ async function initWeb3() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+// Check authentication and initialize when the script loads
+document.addEventListener('DOMContentLoaded', async () => {
+  // Check authentication first
+  const isAuthenticated = await utils.checkAuth();
+  if (!isAuthenticated) {
+    utils.redirect('login.html');
+    return;
+  }
+
+  // Initialize Web3 and QR scanner
+  await initWeb3();
   initQRScanner();
 
   // Manual entry handler

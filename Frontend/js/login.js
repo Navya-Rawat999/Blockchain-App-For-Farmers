@@ -38,18 +38,24 @@ document.addEventListener('DOMContentLoaded', () => {
       // Backend sets tokens as cookies. Save only user info from response.
       if (loginData.data && loginData.data.user) {
         utils.saveUser(loginData.data.user);
+        console.log('User saved:', loginData.data.user);
+      }
+      
+      // Also save the access token to localStorage for Authorization header
+      if (loginData.data && loginData.data.AccessToken) {
+        utils.saveAuthToken(loginData.data.AccessToken);
+        console.log('Access token saved');
       }
 
       utils.showAlert('Login successful! Redirecting...', 'success');
 
-      // Redirect based on role
-      setTimeout(() => {
-        if (role === 'farmer') {
-          utils.redirect('farmer.html');
-        } else if (role === 'customer') {
-          utils.redirect('customer.html');
-        }
-      }, 1000);
+      // Redirect based on role immediately
+      console.log('Redirecting to', role, 'dashboard...');
+      if (role === 'farmer') {
+        window.location.href = '/HTML/farmer.html';
+      } else if (role === 'customer') {
+        window.location.href = '/HTML/customer.html';
+      }
 
     } catch (error) {
       utils.showAlert(error.message || 'Login failed. Please try again.', 'error');

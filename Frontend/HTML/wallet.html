@@ -4,8 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Connect Wallet - ProduceChain</title>
+  <script src="../js/auth-guard.js"></script>
   <link rel="stylesheet" href="../css/main.css">
   <link rel="stylesheet" href="../css/navbar.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "ethers": "https://cdn.jsdelivr.net/npm/ethers@6.12.0/dist/ethers.min.js"
+      }
+    }
+  </script>
   <style>
     .spinner {
       width: 40px;
@@ -115,8 +123,54 @@
     import centralizedWallet from '../js/wallet.js';
     import { ethers } from 'ethers';
     
+    // Define global functions FIRST before DOMContentLoaded
+    window.connectWallet = async () => {
+      try {
+        const result = await centralizedWallet.connectWallet();
+        await updateWalletUI(true);
+        showAlert('Wallet connected successfully!', 'success');
+      } catch (error) {
+        console.error('Connection error:', error);
+        showAlert('Failed to connect wallet: ' + error.message, 'error');
+      }
+    };
+    
+    window.disconnectWallet = async () => {
+      try {
+        await centralizedWallet.disconnectWallet();
+        await updateWalletUI(false);
+        showAlert('Wallet disconnected successfully!', 'success');
+      } catch (error) {
+        console.error('Disconnection error:', error);
+        showAlert('Failed to disconnect wallet: ' + error.message, 'error');
+      }
+    };
+    
+    window.copyAddress = () => {
+      centralizedWallet.copyAddress();
+    };
+    
+    window.updateBalance = async () => {
+      try {
+        const balance = await centralizedWallet.updateBalance();
+        if (balance !== null) {
+          document.getElementById('wallet-balance-display').textContent = parseFloat(balance).toFixed(4);
+          showAlert('Balance updated!', 'success');
+        }
+      } catch (error) {
+        console.error('Balance update error:', error);
+        showAlert('Failed to update balance', 'error');
+      }
+    };
+    
     // Wait for wallet to be ready and check connection
     document.addEventListener('DOMContentLoaded', async () => {
+      // Check authentication first
+      if (!(await utils.checkAuth())) {
+        utils.redirect('login.html');
+        return;
+      }
+
       try {
         await centralizedWallet.waitForReady();
         
@@ -178,49 +232,6 @@
         connectedDiv.style.display = 'none';
       }
     }
-    
-    // Connect wallet function
-    window.connectWallet = async () => {
-      try {
-        const result = await centralizedWallet.connectWallet();
-        await updateWalletUI(true);
-        showAlert('Wallet connected successfully!', 'success');
-      } catch (error) {
-        console.error('Connection error:', error);
-        showAlert('Failed to connect wallet: ' + error.message, 'error');
-      }
-    };
-    
-    // Disconnect wallet function
-    window.disconnectWallet = async () => {
-      try {
-        await centralizedWallet.disconnectWallet();
-        await updateWalletUI(false);
-        showAlert('Wallet disconnected successfully!', 'success');
-      } catch (error) {
-        console.error('Disconnection error:', error);
-        showAlert('Failed to disconnect wallet: ' + error.message, 'error');
-      }
-    };
-    
-    // Copy address function
-    window.copyAddress = () => {
-      centralizedWallet.copyAddress();
-    };
-    
-    // Update balance function
-    window.updateBalance = async () => {
-      try {
-        const balance = await centralizedWallet.updateBalance();
-        if (balance !== null) {
-          document.getElementById('wallet-balance-display').textContent = parseFloat(balance).toFixed(4);
-          showAlert('Balance updated!', 'success');
-        }
-      } catch (error) {
-        console.error('Balance update error:', error);
-        showAlert('Failed to update balance', 'error');
-      }
-    };
     
     // Helper functions
     function showAlert(message, type) {
