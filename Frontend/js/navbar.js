@@ -1,4 +1,4 @@
-import utils from '../js/utils.js';
+import utils from './utils.js';
 
 // Navigation component - included on all pages. Dynamically shows links based on auth.
 async function initNavbar() {
@@ -98,6 +98,8 @@ if (document.readyState === 'loading') {
   initNavbar();
 }
 
-// Export for global access
+// Export for global access and debugging
+window.initNavbar = initNavbar;
+window.handleLogout = handleLogout;
 window.initNavbar = initNavbar;
 window.handleLogout = handleLogout;
