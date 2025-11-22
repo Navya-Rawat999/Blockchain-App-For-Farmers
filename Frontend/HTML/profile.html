@@ -35,64 +35,6 @@
           <div class="stat-value" id="stat-transactions">0</div>
           <div class="stat-label">Transactions</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-value" id="stat-balance">0 ETH</div>
-          <div class="stat-label">Wallet Balance</div>
-        </div>
-      </div>
-
-      <!-- Wallet Information -->
-      <div class="card mb-2">
-        <h2 class="section-title">💼 Wallet Information</h2>
-        
-        <!-- Manual Wallet Address Input -->
-        <div class="form-group">
-          <label class="form-label" for="manual-wallet-address">Enter Your Wallet Address (Optional)</label>
-          <div style="display: flex; gap: 0.5rem;">
-            <input 
-              type="text" 
-              id="manual-wallet-address" 
-              class="form-input" 
-              placeholder="0x... (Enter your MetaMask wallet address)"
-              style="flex: 1;"
-            >
-            <button id="save-wallet-btn" class="btn btn-outline">
-              Save
-            </button>
-          </div>
-          <span class="form-help">You can manually enter your wallet address or connect MetaMask below.</span>
-        </div>
-
-        <!-- Current Wallet Address Display -->
-        <div class="info-row">
-          <span class="info-label">
-            Current Wallet Address
-            <span class="copy-btn" title="Copy address">📋</span>
-          </span>
-          <div class="wallet-address" id="wallet-address">Not set</div>
-        </div>
-
-        <!-- MetaMask Connection -->
-        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-          <button id="connect-wallet-btn" class="btn btn-primary">
-            Connect MetaMask
-          </button>
-          <button id="disconnect-wallet-btn" class="btn btn-outline" style="display: none;">
-            Disconnect
-          </button>
-        </div>
-
-        <!-- Network and Balance Info (only show when MetaMask connected) -->
-        <div id="metamask-info" style="display: none; margin-top: 1rem;">
-          <div class="info-row">
-            <span class="info-label">Network</span>
-            <span class="info-value" id="network-name">-</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Balance</span>
-            <span class="info-value" id="wallet-balance">0 ETH</span>
-          </div>
-        </div>
       </div>
 
       <!-- Account Information -->
