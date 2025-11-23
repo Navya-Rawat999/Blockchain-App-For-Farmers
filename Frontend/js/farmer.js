@@ -2,9 +2,6 @@ import utils from '../js/utils.js';
 import centralizedWallet, { CONTRACT_ABI } from '../js/wallet.js';
 import { ethers } from 'ethers';
 
-// Create wallet instance
-// const centralizedWallet = new CentralizedWallet();
-
 // Farmer Dashboard - Web3 interactions using centralized wallet
 
 // Get reviews for specific produce
@@ -218,7 +215,8 @@ async function loadProduceList() {
             priceInWei: details[5],
             originFarm: details[6],
             qrCode: details[7],
-            registrationTimestamp: details[8]
+            quantity: details[8] || '1 unit', // Get quantity from contract
+            registrationTimestamp: details[9]
           });
         }
       } catch (err) {
@@ -269,11 +267,12 @@ async function loadProduceList() {
           <div style="display: grid; gap: 0.5rem; font-size: 0.875rem; margin-bottom: 1rem;">
             <div><strong>ID:</strong> ${item.id}</div>
             <div><strong>Origin:</strong> ${item.originFarm}</div>
+            <div><strong>Quantity:</strong> ${item.quantity}</div>
             <div><strong>Price:</strong> ${priceInEth} ETH</div>
-            <div><strong>QR Code:</strong> ${item.qrCode}</div>
             <div><strong>Registered:</strong> ${date.toLocaleString()}</div>
           </div>
-          <div style="display: flex; gap: 0.5rem;">
+          
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
             <button 
               class="btn btn-outline update-price-btn"
               data-produce-id="${item.id}"
@@ -290,6 +289,13 @@ async function loadProduceList() {
               style="flex: 1;"
             >
               Update Status
+            </button>
+          </div>
+          
+          <div style="display: flex; gap: 0.5rem;">
+            <button onclick="showQRForProduce('${item.id}', '${item.name}', '${item.quantity}')" 
+                    class="btn btn-primary" style="flex: 1;">
+              📱 Show/Generate QR Code
             </button>
           </div>
         </div>
@@ -374,12 +380,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const name = document.getElementById('produce-name').value;
     const originFarm = document.getElementById('origin-farm').value;
     const priceInEth = document.getElementById('price').value;
-    const qrCode = document.getElementById('qr-code').value;
+    const quantity = document.getElementById('quantity').value;
     const imageFile = document.getElementById('produce-image').files[0];
 
-    // Validate image
+    // Validate inputs
     if (!imageFile) {
       utils.showAlert('Please upload a produce image', 'error');
+      return;
+    }
+
+    if (!quantity || quantity.trim() === '') {
+      utils.showAlert('Please enter a valid quantity', 'error');
       return;
     }
 
@@ -411,8 +422,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       utils.showAlert('Registering on Sepolia blockchain...', 'warning');
       
-      // Call the contract's registerProduce function
-      const tx = await contract.registerProduce(name, originFarm, priceInWei, qrCode);
+      // Call the contract's registerProduce function with quantity
+      // Use temporary QR data for blockchain registration
+      const tempQrCode = `TEMP-${name.replace(/\s+/g, '')}-${Date.now()}`;
+      const tx = await contract.registerProduce(name, originFarm, priceInWei, tempQrCode, quantity);
       
       utils.showAlert('Transaction submitted to Sepolia. Waiting for confirmation...', 'warning');
       const receipt = await tx.wait();
@@ -434,31 +447,38 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       try {
-        utils.showAlert('Saving to database with image...', 'warning');
+        utils.showAlert('Saving to database and generating QR code...', 'warning');
         
         // Prepare form data for API call including image
         const formData = new FormData();
         formData.append('name', name);
         formData.append('originFarm', originFarm);
         formData.append('priceInWei', priceInWei.toString());
-        formData.append('qrCode', qrCode);
+        formData.append('quantity', quantity);
         formData.append('blockchainId', parseInt(blockchainId));
         formData.append('transactionHash', receipt.hash);
         formData.append('produceImage', imageFile);
 
-        await utils.apiCall('/api/v1/produce/register', {
+        const response = await utils.apiCall('/api/v1/produce/register', {
           method: 'POST',
-          body: formData, // Send as FormData for file upload
+          body: formData,
         });
+
+        // Show QR code from backend response
+        if (response.data && response.data.qrInfo) {
+          showGeneratedQRCode(response.data, response.data.qrInfo);
+        }
+
       } catch (dbError) {
         console.log('Database save failed, but blockchain registration succeeded:', dbError);
         utils.showAlert('Blockchain registration successful, but database save failed. Your produce is registered on blockchain.', 'warning');
       }
 
-      utils.showAlert('Produce registered successfully with image!', 'success');
+      utils.showAlert('Produce registered successfully with QR code!', 'success');
       form.reset();
       imagePreview.style.display = 'none';
       await loadProduceList();
+
     } catch (error) {
       console.error('Registration error:', error);
       
@@ -483,4 +503,90 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadProduceList();
 });
 
-// Don't export global functions
+// Show generated QR code modal
+function showGeneratedQRCode(produceData, qrInfo) {
+  const modalHTML = `
+    <div id="qr-modal" class="modal" style="display: flex;">
+      <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+          <h2 class="modal-title">🎉 QR Code Generated!</h2>
+          <button onclick="closeQRModal()" class="close-btn">×</button>
+        </div>
+        
+        <div style="padding: 1.5rem; text-align: center;">
+          <div id="qr-display-container">
+            <img src="${qrInfo.qrImageUrl}" alt="QR Code for ${produceData.name}" 
+                 style="max-width: 100%; height: auto; border-radius: 0.5rem; border: 1px solid var(--border-color);">
+          </div>
+          
+          <div style="margin-top: 1rem; text-align: left; background: rgba(0,0,0,0.1); padding: 1rem; border-radius: 0.5rem;">
+            <h4>QR Code Contains:</h4>
+            <ul style="margin: 0.5rem 0;">
+              <li><strong>Produce:</strong> ${qrInfo.qrData.name}</li>
+              <li><strong>Quantity:</strong> ${qrInfo.qrData.quantity}</li>
+              <li><strong>Farmer:</strong> ${qrInfo.qrData.farmer}</li>
+              <li><strong>Farm:</strong> ${qrInfo.qrData.farm}</li>
+              <li><strong>Link:</strong> ${qrInfo.displayUrl}</li>
+            </ul>
+          </div>
+          
+          <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+            <button onclick="downloadQRCode()" class="btn btn-primary" style="flex: 1;">
+              📱 Download QR Code
+            </button>
+            <button onclick="closeQRModal()" class="btn btn-outline" style="flex: 1;">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+function closeQRModal() {
+  const modal = document.getElementById('qr-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+function downloadQRCode() {
+  const qrImage = document.querySelector('#qr-display-container img');
+  if (qrImage) {
+    const link = document.createElement('a');
+    link.download = `produce-qr-${Date.now()}.png`;
+    link.href = qrImage.src;
+    link.click();
+  }
+}
+
+// Show QR code for existing produce
+async function showQRForProduce(produceId, produceName, quantity) {
+  try {
+    // Try to get QR code from backend
+    const response = await utils.apiCall(`/api/v1/produce/${produceId}/qr-code`, {
+      method: 'POST'
+    });
+
+    if (response.success && response.data.qrInfo) {
+      const produceData = {
+        name: produceName,
+        quantity: quantity
+      };
+      showGeneratedQRCode(produceData, response.data.qrInfo);
+    } else {
+      utils.showAlert('Failed to generate QR code', 'error');
+    }
+  } catch (error) {
+    console.error('Error generating QR code:', error);
+    utils.showAlert('Failed to generate QR code. Please try again.', 'error');
+  }
+}
+
+// Export global functions
+window.closeQRModal = closeQRModal;
+window.downloadQRCode = downloadQRCode;
+window.showQRForProduce = showQRForProduce;

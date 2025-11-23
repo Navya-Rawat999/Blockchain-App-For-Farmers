@@ -125,6 +125,11 @@ export const CONTRACT_ABI=[
 				"internalType": "string",
 				"name": "_QRCodeData",
 				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_quantity",
+				"type": "string"
 			}
 		],
 		"name": "registerProduce",
@@ -247,6 +252,11 @@ export const CONTRACT_ABI=[
 			{
 				"internalType": "string",
 				"name": "qrCode",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "quantity",
 				"type": "string"
 			},
 			{

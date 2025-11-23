@@ -17,7 +17,7 @@ class CentralizedWallet {
     this.isReady = false;
     
     
-    this.contractAddress = '0x69fa6fbdbfbbceb5a4e2f2668b5e258f9cd41a0c';
+    this.contractAddress = '0x8c944f080634dc279aa0ed76f4019eb027924f3e';
 
     // Sepolia network configuration
     this.sepoliaConfig = {

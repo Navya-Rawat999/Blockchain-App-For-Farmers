@@ -107,17 +107,37 @@ function displayProductDetails() {
   const estimatedUSD = (parseFloat(priceInEth) * 2500).toFixed(2); // Rough ETH to USD
   document.getElementById('price-usd').textContent = `~$${estimatedUSD}`;
 
-  // Update QR code
-  document.getElementById('qr-code-display').textContent = currentProduct.qrCode;
+  // Update QR code display - show image if available from backend
+  const qrContainer = document.getElementById('qr-code-display');
+  if (currentProduct.qrCodeImage) {
+    qrContainer.innerHTML = `
+      <div style="text-align: center;">
+        <img src="${currentProduct.qrCodeImage}" alt="QR Code for ${currentProduct.name}" 
+             style="max-width: 200px; height: auto; border-radius: 0.5rem; border: 1px solid var(--border-color);">
+        <div style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-secondary);">
+          Scan to verify authenticity
+        </div>
+      </div>
+    `;
+  } else {
+    qrContainer.innerHTML = `
+      <div style="padding: 1rem; background: rgba(0,0,0,0.1); border-radius: 0.5rem; text-align: center;">
+        <p style="color: var(--text-secondary); margin: 0;">QR Code not yet generated</p>
+        <p style="color: var(--text-secondary); font-size: 0.875rem; margin: 0.5rem 0 0 0;">Contact farmer to generate QR code</p>
+      </div>
+    `;
+  }
 
   // Update product details
-  document.getElementById('product-details').innerHTML = `
+  const detailsHTML = `
     <div><span class="detail-label">Product ID:</span><span class="detail-value">${currentProduct.id}</span></div>
     <div><span class="detail-label">Origin Farm:</span><span class="detail-value">${currentProduct.originFarm}</span></div>
+    ${currentProduct.quantity ? `<div><span class="detail-label">Quantity:</span><span class="detail-value">${currentProduct.quantity}</span></div>` : ''}
     <div><span class="detail-label">Registration Date:</span><span class="detail-value">${date.toLocaleDateString()}</span></div>
     <div><span class="detail-label">Current Status:</span><span class="detail-value">${currentProduct.currentStatus}</span></div>
     ${currentProduct.description ? `<div><span class="detail-label">Description:</span><span class="detail-value">${currentProduct.description}</span></div>` : ''}
   `;
+  document.getElementById('product-details').innerHTML = detailsHTML;
 
   // Update farmer information
   document.getElementById('farmer-info').innerHTML = `

@@ -1,17 +1,20 @@
 import { ProduceItem } from "../models/produceItem.models.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import QRCodeGenerator from "../utils/qrCodeGenerator.js"
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { ApiResponse } from '../utils/ApiResponse.js'
 import { ApiError } from '../utils/ApiError.js'
 
+const qrGenerator = new QRCodeGenerator()
+
 // Register new produce (called when farmer registers produce)
 const registerProduce = asyncHandler(async (req, res) => {
-  const { name, originFarm, priceInWei, qrCode, blockchainId, transactionHash } = req.body;
+  const { name, originFarm, priceInWei, quantity, blockchainId, transactionHash } = req.body;
   const farmerId = req.user._id; // Get farmer ID from authenticated user
 
   // Validation
-  if (!name || !originFarm || !priceInWei || !qrCode) {
-    throw new ApiError(400, "All fields are required");
+  if (!name || !originFarm || !priceInWei || !quantity) {
+    throw new ApiError(400, "All fields including quantity are required");
   }
 
   if (!blockchainId || !transactionHash) {
@@ -47,6 +50,19 @@ const registerProduce = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Failed to upload produce image");
   }
 
+  // Prepare produce data for QR generation
+  const produceDataForQR = {
+    id: parsedBlockchainId,
+    blockchainId: parsedBlockchainId,
+    name: name.trim(),
+    quantity: quantity.trim(),
+    originalFarmer: req.user.username,
+    originFarm: originFarm.trim()
+  };
+
+  // Generate QR code and upload to Cloudinary
+  const qrInfo = await qrGenerator.generateAndUploadQRCode(produceDataForQR);
+
   // Create produce item in database
   const produceItem = await ProduceItem.create({
     id: parsedBlockchainId,
@@ -56,7 +72,10 @@ const registerProduce = asyncHandler(async (req, res) => {
     currentSeller: req.user.username,
     priceInWei: priceInWei.toString(), // Store as string for large numbers
     originFarm: originFarm.trim(),
-    qrCode: qrCode.trim(),
+    quantity: quantity.trim(), // Store quantity
+    qrCode: qrInfo.data, // Store QR data string
+    qrCodeImage: qrInfo.qrImageUrl, // Store QR image URL
+    qrCodePublicId: qrInfo.qrImagePublicId, // Store Cloudinary public ID
     produceImage: produceImage.url, // Store Cloudinary URL
     blockchainId: parsedBlockchainId,
     transactionHash: transactionHash,
@@ -65,7 +84,14 @@ const registerProduce = asyncHandler(async (req, res) => {
   });
 
   return res.status(201).json(
-    new ApiResponse(201, produceItem, "Produce registered successfully")
+    new ApiResponse(201, {
+      ...produceItem.toObject(),
+      qrInfo: {
+        qrData: qrInfo.qrData,
+        qrImageUrl: qrInfo.qrImageUrl,
+        displayUrl: qrInfo.displayUrl
+      }
+    }, "Produce registered successfully with QR code")
   );
 });
 
@@ -219,7 +245,7 @@ const getFarmerProduce = asyncHandler(async (req, res) => {
   );
 });
 
-// Get single produce item by ID
+// Get single produce item by ID with QR code
 const getProduceById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -235,8 +261,18 @@ const getProduceById = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Produce item not found");
   }
 
+  // Include QR code information in response
+  const response = {
+    ...produceItem.toObject(),
+    qrInfo: {
+      qrData: qrGenerator.parseQRData(produceItem.qrCode || '{}'),
+      qrImageUrl: produceItem.qrCodeImage,
+      displayUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/HTML/customer.html?produce=${produceItem.blockchainId}`
+    }
+  };
+
   return res.status(200).json(
-    new ApiResponse(200, produceItem, "Produce item retrieved successfully")
+    new ApiResponse(200, response, "Produce item retrieved successfully")
   );
 });
 
@@ -581,6 +617,108 @@ const incrementProductView = asyncHandler(async (req, res) => {
   );
 });
 
+// Generate QR code for existing produce (if missing)
+const generateQRCode = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const farmerId = req.user._id;
+
+  const produceItem = await ProduceItem.findOne({ 
+    $or: [
+      { blockchainId: id },
+      { id: parseInt(id) || 0 }
+    ],
+    farmerAddress: farmerId // Ensure only owner can generate QR
+  });
+
+  if (!produceItem) {
+    throw new ApiError(404, "Produce item not found or you don't have permission");
+  }
+
+  // Check if QR code already exists
+  if (produceItem.qrCodeImage) {
+    return res.status(200).json(
+      new ApiResponse(200, {
+        qrInfo: {
+          qrData: qrGenerator.parseQRData(produceItem.qrCode || '{}'),
+          qrImageUrl: produceItem.qrCodeImage,
+          displayUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/HTML/customer.html?produce=${produceItem.blockchainId}`
+        }
+      }, "QR code already exists")
+    );
+  }
+
+  // Generate QR code
+  const qrInfo = await qrGenerator.generateAndUploadQRCode({
+    id: produceItem.blockchainId,
+    blockchainId: produceItem.blockchainId,
+    name: produceItem.name,
+    quantity: produceItem.quantity,
+    originalFarmer: produceItem.originalFarmer,
+    originFarm: produceItem.originFarm
+  });
+
+  // Update produce item with QR code
+  produceItem.qrCode = qrInfo.data;
+  produceItem.qrCodeImage = qrInfo.qrImageUrl;
+  produceItem.qrCodePublicId = qrInfo.qrImagePublicId;
+  await produceItem.save();
+
+  return res.status(200).json(
+    new ApiResponse(200, {
+      qrInfo: {
+        qrData: qrInfo.qrData,
+        qrImageUrl: qrInfo.qrImageUrl,
+        displayUrl: qrInfo.displayUrl
+      }
+    }, "QR code generated successfully")
+  );
+});
+
+// Parse QR code data (for scanning functionality)
+const parseQRCode = asyncHandler(async (req, res) => {
+  const { qrData } = req.body;
+
+  if (!qrData) {
+    throw new ApiError(400, "QR data is required");
+  }
+
+  try {
+    const parsedData = qrGenerator.parseQRData(qrData);
+    
+    // Get produce details if ID is valid
+    if (parsedData.id) {
+      const produceItem = await ProduceItem.findOne({ 
+        $or: [
+          { blockchainId: parsedData.id },
+          { id: parseInt(parsedData.id) || 0 }
+        ]
+      });
+
+      if (produceItem) {
+        return res.status(200).json(
+          new ApiResponse(200, {
+            parsedData,
+            produceItem: {
+              ...produceItem.toObject(),
+              qrInfo: {
+                qrImageUrl: produceItem.qrCodeImage,
+                displayUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/HTML/customer.html?produce=${produceItem.blockchainId}`
+              }
+            }
+          }, "QR code parsed successfully")
+        );
+      }
+    }
+
+    return res.status(200).json(
+      new ApiResponse(200, { parsedData }, "QR code parsed successfully")
+    );
+
+  } catch (error) {
+    throw new ApiError(400, `Failed to parse QR code: ${error.message}`);
+  }
+});
+
 export {
   registerProduce,
   getAllProduce,
@@ -594,5 +732,7 @@ export {
   getSearchSuggestions,
   markProduceAsSold,
   removeSoldProduce,
-  validatePurchaseEligibility
+  validatePurchaseEligibility,
+  generateQRCode,
+  parseQRCode
 };

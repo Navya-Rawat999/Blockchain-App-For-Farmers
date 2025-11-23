@@ -35,6 +35,29 @@
         <!-- QR Scanner Container -->
         <div id="qr-reader" class="qr-reader-container"></div>
 
+        <!-- QR Code Upload Section -->
+        <div class="upload-section" style="margin-top: 2rem; padding: 1.5rem; border: 2px dashed var(--border-color); border-radius: 0.5rem; text-align: center;">
+          <p style="margin-bottom: 1rem; color: var(--text-secondary);">
+            📸 Or upload a QR code image:
+          </p>
+          <input 
+            type="file" 
+            id="qr-file-input" 
+            accept="image/*" 
+            style="display: none;"
+          >
+          <button id="upload-qr-btn" class="btn btn-outline" style="margin-bottom: 0.5rem;">
+            📤 Choose QR Code Image
+          </button>
+          <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
+            Supported formats: JPG, PNG, WebP
+          </p>
+          <div id="upload-preview" style="display: none; margin-top: 1rem;">
+            <img id="uploaded-qr-preview" style="max-width: 200px; height: auto; border-radius: 0.5rem; border: 1px solid var(--border-color);" alt="Uploaded QR">
+            <p style="margin-top: 0.5rem; color: var(--success);">✓ Image uploaded, processing...</p>
+          </div>
+        </div>
+
         <!-- Manual Entry Option -->
         <div class="manual-entry-section">
           <p class="manual-entry-description">

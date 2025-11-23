@@ -119,6 +119,36 @@
   color: var(--text-secondary);
 }
 
+/* Upload Section */
+.upload-section {
+  transition: all 0.3s ease;
+}
+
+.upload-section:hover {
+  border-color: var(--primary-color);
+  background-color: rgba(79, 70, 229, 0.05);
+}
+
+#upload-preview {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#qr-file-input:focus + #upload-qr-btn {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .scan-title {

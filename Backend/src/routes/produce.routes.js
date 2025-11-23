@@ -10,7 +10,9 @@ import {
   getFeaturedProduce,
   incrementProductView,
   getSearchSuggestions,
-  validatePurchaseEligibility
+  validatePurchaseEligibility,
+  generateQRCode,
+  parseQRCode
 } from '../controllers/produce.controller.js'
 import { verifyJWT } from '../middleware/auth.middleware.js'
 import { upload } from '../middleware/multer.middleware.js'
@@ -25,6 +27,9 @@ router.route("/stats").get(getMarketplaceStats)
 router.route("/:id").get(getProduceById)
 router.route("/:id/view").post(incrementProductView)
 
+// QR code parsing route (public)
+router.route("/qr/parse").post(parseQRCode)
+
 // Protected routes (authentication required)
 router.route("/register").post(
   verifyJWT, 
@@ -34,6 +39,9 @@ router.route("/register").post(
 router.route("/my-produce").get(verifyJWT, getFarmerProduce)
 router.route("/:id/status").patch(verifyJWT, updateProduceStatus)
 router.route("/:id/price").patch(verifyJWT, updateProducePrice)
+
+// QR code generation route (protected)
+router.route("/:id/qr-code").post(verifyJWT, generateQRCode)
 
 // Purchase validation route
 router.route("/:id/validate-purchase").get(verifyJWT, validatePurchaseEligibility)

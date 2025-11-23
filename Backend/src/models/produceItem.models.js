@@ -49,14 +49,27 @@ const produceItem_Schema = new Schema({
     trim: true,
     index: true
   },
+  quantity: {
+    type: String,
+    required: true,
+    trim: true
+  },
   qrCode: {
     type: String,
     required: true,
     trim: true
   },
+  qrCodeImage: {
+    type: String, // Cloudinary URL for QR code image
+    required: false
+  },
+  qrCodePublicId: {
+    type: String, // Cloudinary public ID for QR code image
+    required: false
+  },
   produceImage: {
     type: String, // Cloudinary URL for produce image
-    required: true
+    required: false // Changed from true to false
   },
   currentStatus: {
     type: String,
