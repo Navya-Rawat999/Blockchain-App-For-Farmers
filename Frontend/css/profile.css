@@ -34,14 +34,14 @@
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(26, 29, 41, 0.95), rgba(36, 40, 53, 0.95));
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 240, 240, 0.95));
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 3.5rem;
   margin-bottom: 1.5rem;
-  border: 5px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), inset 0 2px 10px rgba(255, 255, 255, 0.1);
+  border: 5px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   position: relative;
   z-index: 1;
   transition: transform 0.3s ease;
@@ -69,15 +69,15 @@
 }
 
 .stat-card {
-  background: linear-gradient(135deg, rgba(36, 40, 53, 0.95), rgba(26, 29, 41, 0.95));
-  border: 2px solid rgba(16, 185, 129, 0.3);
+  background: white;
+  border: 2px solid rgba(16, 185, 129, 0.2);
   border-radius: 1rem;
   padding: 2rem 1.5rem;
   text-align: center;
   position: relative;
   overflow: hidden;
   transition: all 0.3s ease;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .stat-card::before {
@@ -87,7 +87,7 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.1), transparent);
   transition: left 0.5s ease;
 }
 
@@ -97,8 +97,8 @@
 
 .stat-card:hover {
   transform: translateY(-8px);
-  border-color: rgba(16, 185, 129, 0.6);
-  box-shadow: 0 16px 48px rgba(16, 185, 129, 0.4);
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 12px 32px rgba(16, 185, 129, 0.2);
 }
 
 .stat-icon {
@@ -110,7 +110,7 @@
 .stat-value {
   font-size: 2.5rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #10b981, #34d399);
+  background: linear-gradient(135deg, #10b981, #059669);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -120,7 +120,7 @@
 
 .stat-label {
   font-size: 0.875rem;
-  color: rgba(156, 163, 175, 0.9);
+  color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   font-weight: 600;
@@ -128,17 +128,17 @@
 
 /* Card Styles */
 .card {
-  background: linear-gradient(135deg, rgba(36, 40, 53, 0.95), rgba(26, 29, 41, 0.95));
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  background: white;
+  border: 1px solid #e5e7eb;
   border-radius: 1rem;
   padding: 2rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .section-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #1f2937;
 }
 
 /* Info Grid */
@@ -152,14 +152,14 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 0;
-  border-bottom: 1px solid rgba(16, 185, 129, 0.15);
+  border-bottom: 1px solid #f3f4f6;
   transition: all 0.2s ease;
 }
 
 .info-row:hover {
   padding-left: 0.75rem;
   background: rgba(16, 185, 129, 0.05);
-  border-bottom-color: rgba(16, 185, 129, 0.3);
+  border-bottom-color: rgba(16, 185, 129, 0.2);
 }
 
 .info-row:last-child {
@@ -168,7 +168,7 @@
 
 .info-label {
   font-weight: 600;
-  color: rgba(156, 163, 175, 0.9);
+  color: #6b7280;
   font-size: 0.938rem;
   display: flex;
   align-items: center;
@@ -184,8 +184,8 @@
 
 /* Transaction List */
 .transaction-item {
-  background: linear-gradient(135deg, rgba(36, 40, 53, 0.7), rgba(26, 29, 41, 0.7));
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  background: white;
+  border: 1px solid #e5e7eb;
   border-radius: 0.75rem;
   padding: 1.25rem;
   margin-bottom: 1rem;
@@ -212,8 +212,8 @@
 
 .transaction-item:hover {
   transform: translateX(8px);
-  border-color: rgba(16, 185, 129, 0.5);
-  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.15);
 }
 
 .transaction-header {
@@ -238,20 +238,20 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   margin-bottom: 0.5rem;
 }
 
 .tx-sale {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(5, 150, 105, 0.3));
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.4);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2));
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .tx-registration {
-  background: linear-gradient(135deg, rgba(79, 70, 229, 0.3), rgba(67, 56, 202, 0.3));
-  color: #818cf8;
-  border: 1px solid rgba(79, 70, 229, 0.4);
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.2), rgba(67, 56, 202, 0.2));
+  color: #4f46e5;
+  border: 1px solid rgba(79, 70, 229, 0.3);
 }
 
 /* Utility Classes */
@@ -272,7 +272,7 @@
 }
 
 .text-secondary {
-  color: rgba(156, 163, 175, 0.7);
+  color: #6b7280;
 }
 
 /* Responsive Design */

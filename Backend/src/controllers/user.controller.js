@@ -234,16 +234,13 @@ const changeCurrentPassword = asyncHandler(async(req, res) => {
   .json(new ApiResponse(200, {}, "Password changed successfully"))
 })
 
+
 // Enhanced getCurrentUser with transaction info only (no wallet tracking)
 const getCurrentUser = asyncHandler(async(req, res) => {
   const userId = req.user._id;
 
-  // Get user info with all fields including profilePic
-  const user = await User.findById(userId).select('-password -refreshToken');
-
-  if (!user) {
-    throw new ApiError(404, "User not found");
-  }
+  // Get user info
+  const user = req.user;
 
   // Get basic transaction stats
   let transactionStats = [];
@@ -285,12 +282,8 @@ const getCurrentUser = asyncHandler(async(req, res) => {
 const getUserProfile = asyncHandler(async(req, res) => {
   const userId = req.user._id;
 
-  // Get user info with all fields including profilePic
-  const user = await User.findById(userId).select('-password -refreshToken');
-
-  if (!user) {
-    throw new ApiError(404, "User not found");
-  }
+  // Get user info
+  const user = req.user;
 
   let transactionStats = [];
   let recentTransactions = [];
