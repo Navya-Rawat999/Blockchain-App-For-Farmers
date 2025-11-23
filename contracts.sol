@@ -13,6 +13,7 @@ contract ProduceMarket {
         uint256 priceInWei; // PRICE IS NOW EXPLICITLY IN WEI
         string originFarm;
         string QRCode;
+        string quantity; // Added quantity field
     }
 
     // structure to log a financial transaction
@@ -74,13 +75,15 @@ contract ProduceMarket {
         string memory _name,
         string memory _originFarm,
         uint256 _initialPriceInWei, // PRICE INPUT IS NOW WEI
-        string memory _QRCodeData
+        string memory _QRCodeData,
+        string memory _quantity // Added quantity parameter
     ) public returns(uint256){
         require(bytes(_name).length>0,"Name Cannot be Empty");
         require(bytes(_originFarm).length>0,"Origin Farm Cannot be Empty");
         // Price must be greater than zero, even in Wei
         require(_initialPriceInWei>0,"Price must be greater than zero"); 
         require(bytes(_QRCodeData).length>0,"QR Code Data Cannot be Empty");
+        require(bytes(_quantity).length>0,"Quantity Cannot be Empty");
     
 
         uint256 CurrentId = nextProduceId;
@@ -94,7 +97,8 @@ contract ProduceMarket {
             "Harvested",
             _initialPriceInWei, // Stored as Wei
             _originFarm,
-            _QRCodeData
+            _QRCodeData,
+            _quantity // Store quantity
         );
 
         // Add the new item ID to the search index
@@ -185,6 +189,7 @@ contract ProduceMarket {
         uint256 priceInWei, // Output explicitly named as Wei
         string memory originFarm,
         string memory qrCode,
+        string memory quantity, // Added quantity to output
         uint256 registrationTimestamp
     ) {
         require(produceItems[_id].id != 0, "Produce item does not exist");
@@ -198,6 +203,7 @@ contract ProduceMarket {
             item.priceInWei, // Correctly returns the stored Wei value
             item.originFarm,
             item.QRCode,
+            item.quantity, // Return quantity
             item.registrationTimeStamp
         );
     }
