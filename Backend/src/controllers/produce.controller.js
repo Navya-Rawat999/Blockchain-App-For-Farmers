@@ -256,13 +256,31 @@ const getFarmerProduce = asyncHandler(async (req, res) => {
 const getProduceById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  const produceItem = await ProduceItem.findOne({ 
-    $or: [
-      { _id: id },
-      { blockchainId: id },
-      { id: parseInt(id) || 0 }
-    ]
-  });
+  // Try to find by blockchainId first (numeric), then by MongoDB _id (ObjectId)
+  let produceItem;
+  
+  // Check if id is numeric (blockchain ID)
+  if (/^\d+$/.test(id)) {
+    produceItem = await ProduceItem.findOne({ 
+      $or: [
+        { blockchainId: parseInt(id) },
+        { id: parseInt(id) }
+      ]
+    });
+  } else {
+    // Try to find by MongoDB _id (only if it's a valid ObjectId format)
+    try {
+      produceItem = await ProduceItem.findById(id);
+    } catch (error) {
+      // Invalid ObjectId format, try blockchain ID anyway
+      produceItem = await ProduceItem.findOne({ 
+        $or: [
+          { blockchainId: id },
+          { id: id }
+        ]
+      });
+    }
+  }
 
   if (!produceItem) {
     throw new ApiError(404, "Produce item not found");
@@ -271,11 +289,11 @@ const getProduceById = asyncHandler(async (req, res) => {
   // Include QR code information in response
   const response = {
     ...produceItem.toObject(),
-    qrInfo: {
+    qrInfo: produceItem.qrCodeImage ? {
       qrData: qrGenerator.parseQRData(produceItem.qrCode || '{}'),
       qrImageUrl: produceItem.qrCodeImage,
       displayUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/HTML/customer.html?produce=${produceItem.blockchainId}`
-    }
+    } : null
   };
 
   return res.status(200).json(

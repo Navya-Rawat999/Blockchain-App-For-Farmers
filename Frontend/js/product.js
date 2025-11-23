@@ -34,9 +34,14 @@ async function loadProductDetails(productId) {
     // Wait for wallet to be ready
     await centralizedWallet.waitForReady();
 
-    // Connect wallet if not connected
+    // Try to connect wallet silently (don't throw error if fails)
     if (!centralizedWallet.isWalletConnected()) {
-      await centralizedWallet.connectWallet();
+      try {
+        await centralizedWallet.connectWallet();
+      } catch (walletError) {
+        console.log('Wallet connection failed, continuing with read-only mode:', walletError);
+        // Don't throw - allow viewing product details without wallet
+      }
     }
 
     const contract = centralizedWallet.getContract(CONTRACT_ABI);
@@ -47,7 +52,7 @@ async function loadProductDetails(productId) {
     // Get product details from blockchain
     const details = await contract.getProduceDetails(productId);
     
-    // Store current product
+    // Store current product - Fixed timestamp index from 8 to 9
     currentProduct = {
       id: details[0].toString(),
       name: details[1],
@@ -57,21 +62,35 @@ async function loadProductDetails(productId) {
       priceInWei: details[5],
       originFarm: details[6],
       qrCode: details[7],
-      registrationTimestamp: details[8]
+      quantity: details[8], // Index 8 is quantity
+      registrationTimestamp: details[9] // Index 9 is timestamp
     };
 
-    // Load additional data from database (optional)
+    // Load additional data from database (including QR code image)
     try {
       const dbResponse = await utils.apiCall(`/api/v1/produce/${productId}`, {
         method: 'GET'
       });
       
       if (dbResponse.success && dbResponse.data) {
-        // Merge database data with blockchain data
-        currentProduct = { ...currentProduct, ...dbResponse.data };
+        // Merge database data with blockchain data, prioritizing database values for images and QR
+        currentProduct = { 
+          ...currentProduct, 
+          ...dbResponse.data,
+          // Ensure we keep blockchain values for critical fields
+          id: currentProduct.id,
+          priceInWei: currentProduct.priceInWei,
+          currentStatus: currentProduct.currentStatus
+        };
+        
+        console.log('Product loaded with database data:', {
+          hasQRImage: !!currentProduct.qrCodeImage,
+          hasProduceImage: !!currentProduct.produceImage
+        });
       }
     } catch (dbError) {
-      console.log('Database fetch failed, using blockchain data only:', dbError);
+      console.log('Database fetch failed, using blockchain data only:', dbError.message || dbError);
+      // Continue with blockchain data only
     }
 
     displayProductDetails();
@@ -107,25 +126,54 @@ function displayProductDetails() {
   const estimatedUSD = (parseFloat(priceInEth) * 2500).toFixed(2); // Rough ETH to USD
   document.getElementById('price-usd').textContent = `~$${estimatedUSD}`;
 
-  // Update QR code display - show image if available from backend
+  // Update product image if available
+  const productImageEl = document.getElementById('product-image');
+  if (currentProduct.produceImage) {
+    productImageEl.innerHTML = `
+      <img src="${currentProduct.produceImage}" 
+           alt="${currentProduct.name}" 
+           style="width: 100%; height: 100%; object-fit: cover; border-radius: 0.75rem;">
+    `;
+    console.log('Product image displayed:', currentProduct.produceImage);
+  } else {
+    console.log('No product image available');
+  }
+
+  // Update QR code display - show image directly from Cloudinary
   const qrContainer = document.getElementById('qr-code-display');
   if (currentProduct.qrCodeImage) {
     qrContainer.innerHTML = `
-      <div style="text-align: center;">
-        <img src="${currentProduct.qrCodeImage}" alt="QR Code for ${currentProduct.name}" 
-             style="max-width: 200px; height: auto; border-radius: 0.5rem; border: 1px solid var(--border-color);">
-        <div style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-secondary);">
+      <div style="text-align: center; padding: 1rem; background: white; border-radius: 0.5rem;">
+        <img src="${currentProduct.qrCodeImage}" 
+             alt="QR Code for ${currentProduct.name}" 
+             style="max-width: 200px; width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 0.375rem;">
+        <div style="margin-top: 0.75rem; font-size: 0.875rem; color: #666; font-weight: 500;">
           Scan to verify authenticity
         </div>
       </div>
     `;
+    console.log('QR code image displayed:', currentProduct.qrCodeImage);
+  } else if (currentProduct.qrCode) {
+    // Fallback if image not available but QR data exists
+    qrContainer.innerHTML = `
+      <div style="padding: 1rem; background: rgba(0,0,0,0.1); border-radius: 0.5rem; text-align: center;">
+        <p style="color: var(--text-secondary); margin: 0 0 0.5rem 0; font-weight: 500;">QR Data Available</p>
+        <p style="color: var(--text-secondary); font-size: 0.75rem; margin: 0;">
+          QR image is being generated. Please refresh in a moment.
+        </p>
+      </div>
+    `;
+    console.log('QR data available but no image yet');
   } else {
     qrContainer.innerHTML = `
       <div style="padding: 1rem; background: rgba(0,0,0,0.1); border-radius: 0.5rem; text-align: center;">
-        <p style="color: var(--text-secondary); margin: 0;">QR Code not yet generated</p>
-        <p style="color: var(--text-secondary); font-size: 0.875rem; margin: 0.5rem 0 0 0;">Contact farmer to generate QR code</p>
+        <p style="color: var(--text-secondary); margin: 0; font-weight: 500;">QR Code not yet generated</p>
+        <p style="color: var(--text-secondary); font-size: 0.875rem; margin: 0.5rem 0 0 0;">
+          Contact farmer to generate QR code
+        </p>
       </div>
     `;
+    console.log('No QR code available');
   }
 
   // Update product details
@@ -231,6 +279,11 @@ window.initiateTransaction = function() {
   
   if (!centralizedWallet.isWalletConnected()) {
     utils.showAlert('Please connect your wallet first', 'error');
+    // Try to connect wallet
+    centralizedWallet.connectWallet().catch(err => {
+      console.error('Failed to connect wallet:', err);
+      utils.showAlert('Failed to connect wallet. Please try again.', 'error');
+    });
     return;
   }
 

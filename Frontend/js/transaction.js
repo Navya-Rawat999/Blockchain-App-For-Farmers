@@ -72,7 +72,8 @@ async function initializeTransaction(productId) {
       priceInWei: details[5],
       originFarm: details[6],
       qrCode: details[7],
-      registrationTimestamp: details[8]
+      quantity: details[8], // Index 8 is quantity
+      registrationTimestamp: details[9] // Index 9 is timestamp
     };
 
     // Check if product is still available
