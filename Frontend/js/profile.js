@@ -43,9 +43,26 @@ function displayUserProfile(user) {
   if (nameElement) nameElement.textContent = user.fullName || user.username || 'User';
   if (roleElement) roleElement.textContent = user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User';
   
+  // Display profile picture if available, otherwise show emoji
   if (avatarElement) {
-    const avatarEmoji = user.role === 'farmer' ? '🧑‍🌾' : user.role === 'customer' ? '🛒' : '👤';
-    avatarElement.textContent = avatarEmoji;
+    if (user.profilePic) {
+      // Clear existing content and add image
+      avatarElement.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = user.profilePic;
+      img.alt = user.fullName || user.username;
+      img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
+      img.onerror = function() {
+        // Fallback to emoji if image fails to load
+        const avatarEmoji = user.role === 'farmer' ? '🧑‍🌾' : user.role === 'customer' ? '🛒' : '👤';
+        avatarElement.textContent = avatarEmoji;
+      };
+      avatarElement.appendChild(img);
+    } else {
+      // Fallback to emoji if no profile picture
+      const avatarEmoji = user.role === 'farmer' ? '🧑‍🌾' : user.role === 'customer' ? '🛒' : '👤';
+      avatarElement.textContent = avatarEmoji;
+    }
   }
 
   // Account Info

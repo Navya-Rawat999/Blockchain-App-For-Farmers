@@ -249,7 +249,7 @@ async function handleScanResult(qrData) {
   }
 }
 
-// Display produce details from parsed backend data
+// Display produce details from parsed backend data - Updated to show QR image
 function displayProduceFromParsedData(produceItem, parsedData) {
   const resultsContainer = document.getElementById('scan-results');
   const priceInEth = (parseFloat(produceItem.priceInWei) / Math.pow(10, 18)).toFixed(6);
@@ -261,6 +261,16 @@ function displayProduceFromParsedData(produceItem, parsedData) {
         <h3 class="verified-title">Verified Produce</h3>
       </div>
       
+      ${produceItem.qrCodeImage ? `
+        <div style="text-align: center; margin-bottom: 1rem; padding: 1rem; background: white; border-radius: 0.5rem;">
+          <img src="${produceItem.qrCodeImage}" alt="QR Code" 
+               style="max-width: 200px; height: auto; border-radius: 0.5rem; border: 1px solid var(--border-color);">
+          <p style="margin: 0.5rem 0 0 0; font-size: 0.75rem; color: var(--text-secondary);">
+            Original QR Code for this produce
+          </p>
+        </div>
+      ` : ''}
+      
       ${!parsedData.legacy ? `
         <div class="qr-info-section" style="background: rgba(16, 185, 129, 0.1); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
           <h4 style="color: var(--success); margin: 0 0 0.5rem 0;">📱 QR Code Information</h4>
@@ -271,6 +281,13 @@ function displayProduceFromParsedData(produceItem, parsedData) {
             <div><strong>Farm:</strong> ${parsedData.farm || 'N/A'}</div>
             ${parsedData.timestamp ? `<div><strong>QR Generated:</strong> ${new Date(parsedData.timestamp).toLocaleString()}</div>` : ''}
           </div>
+        </div>
+      ` : ''}
+      
+      ${produceItem.produceImage ? `
+        <div style="text-align: center; margin-bottom: 1rem;">
+          <img src="${produceItem.produceImage}" alt="${produceItem.name}" 
+               style="max-width: 100%; height: auto; max-height: 300px; object-fit: cover; border-radius: 0.5rem; border: 1px solid var(--border-color);">
         </div>
       ` : ''}
       
@@ -293,16 +310,17 @@ function displayProduceFromParsedData(produceItem, parsedData) {
       </div>
 
       <div class="results-actions">
-        <a href="customer.html?produce=${produceItem.blockchainId || produceItem.id}" class="btn btn-primary full-width-btn">
+        <a href="product.html?id=${produceItem.blockchainId || produceItem.id}" class="btn btn-primary full-width-btn">
           View Full Details & Purchase
         </a>
       </div>
       
-      ${produceItem.qrInfo && produceItem.qrInfo.displayUrl ? `
-        <div style="margin-top: 1rem; text-align: center;">
-          <a href="${produceItem.qrInfo.displayUrl}" class="btn btn-outline full-width-btn" target="_blank">
-            🔗 Open Direct Link
-          </a>
+      ${produceItem.qrCodeImage ? `
+        <div style="margin-top: 1rem;">
+          <button onclick="downloadQRCodeFromScan('${produceItem.qrCodeImage}', '${produceItem.name}')" 
+                  class="btn btn-outline full-width-btn">
+            💾 Download QR Code
+          </button>
         </div>
       ` : ''}
     </div>
@@ -317,6 +335,31 @@ function displayProduceFromParsedData(produceItem, parsedData) {
     location.reload();
   });
 }
+
+// Function to download QR code from scan page
+window.downloadQRCodeFromScan = function(qrImageUrl, produceName) {
+  if (!qrImageUrl) {
+    utils.showAlert('QR code image not available', 'error');
+    return;
+  }
+  
+  fetch(qrImageUrl)
+    .then(response => response.blob())
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${produceName.replace(/\s+/g, '-')}-qr-code.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      utils.showAlert('QR code downloaded!', 'success');
+    })
+    .catch(() => {
+      window.open(qrImageUrl, '_blank');
+    });
+};
 
 // Display produce details from blockchain data
 function displayProduceDetails(details, parsedData) {

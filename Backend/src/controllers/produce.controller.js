@@ -61,7 +61,12 @@ const registerProduce = asyncHandler(async (req, res) => {
   };
 
   // Generate QR code and upload to Cloudinary
+  console.log('Generating QR code for produce:', produceDataForQR);
   const qrInfo = await qrGenerator.generateAndUploadQRCode(produceDataForQR);
+  console.log('QR code generated successfully:', {
+    qrImageUrl: qrInfo.qrImageUrl,
+    qrPublicId: qrInfo.qrImagePublicId
+  });
 
   // Create produce item in database
   const produceItem = await ProduceItem.create({
@@ -82,6 +87,8 @@ const registerProduce = asyncHandler(async (req, res) => {
     currentStatus: "Harvested",
     isAvailable: true
   });
+
+  console.log('Produce registered successfully with QR code:', produceItem._id);
 
   return res.status(201).json(
     new ApiResponse(201, {
@@ -617,7 +624,7 @@ const incrementProductView = asyncHandler(async (req, res) => {
   );
 });
 
-// Generate QR code for existing produce (if missing)
+// Generate QR code for existing produce - Add logging
 const generateQRCode = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const farmerId = req.user._id;
@@ -627,7 +634,7 @@ const generateQRCode = asyncHandler(async (req, res) => {
       { blockchainId: id },
       { id: parseInt(id) || 0 }
     ],
-    farmerAddress: farmerId // Ensure only owner can generate QR
+    farmerAddress: farmerId
   });
 
   if (!produceItem) {
@@ -636,6 +643,7 @@ const generateQRCode = asyncHandler(async (req, res) => {
 
   // Check if QR code already exists
   if (produceItem.qrCodeImage) {
+    console.log('QR code already exists for produce:', id);
     return res.status(200).json(
       new ApiResponse(200, {
         qrInfo: {
@@ -648,6 +656,7 @@ const generateQRCode = asyncHandler(async (req, res) => {
   }
 
   // Generate QR code
+  console.log('Generating new QR code for existing produce:', id);
   const qrInfo = await qrGenerator.generateAndUploadQRCode({
     id: produceItem.blockchainId,
     blockchainId: produceItem.blockchainId,
@@ -657,11 +666,15 @@ const generateQRCode = asyncHandler(async (req, res) => {
     originFarm: produceItem.originFarm
   });
 
+  console.log('QR code generated:', qrInfo.qrImageUrl);
+
   // Update produce item with QR code
   produceItem.qrCode = qrInfo.data;
-  produceItem.qrCodeImage = qrInfo.qrImageUrl;
+  produceItem.qrCodeImage = qrInfo.qrImageUrl; // Save Cloudinary URL
   produceItem.qrCodePublicId = qrInfo.qrImagePublicId;
   await produceItem.save();
+
+  console.log('Produce updated with QR code:', produceItem._id);
 
   return res.status(200).json(
     new ApiResponse(200, {

@@ -81,7 +81,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Validate profile picture file type
     if (!profilePic.type.startsWith('image/')) {
-      utils.showAlert('Profile picture must be an image file', 'warning');
+      utils.showAlert('Profile picture must be an image file (JPG, PNG, etc.)', 'error');
+      return;
+    }
+
+    // Validate profile picture file size (max 5MB)
+    if (profilePic.size > 5 * 1024 * 1024) {
+      utils.showAlert('Profile picture size must be less than 5MB', 'error');
       return;
     }
 

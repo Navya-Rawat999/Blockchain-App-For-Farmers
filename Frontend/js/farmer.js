@@ -503,41 +503,58 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadProduceList();
 });
 
-// Show generated QR code modal
+// Show generated QR code modal - Updated to handle all QR info properly
 function showGeneratedQRCode(produceData, qrInfo) {
   const modalHTML = `
     <div id="qr-modal" class="modal" style="display: flex;">
       <div class="modal-content" style="max-width: 500px;">
         <div class="modal-header">
-          <h2 class="modal-title">🎉 QR Code Generated!</h2>
+          <h2 class="modal-title">🎉 QR Code Generated Successfully!</h2>
           <button onclick="closeQRModal()" class="close-btn">×</button>
         </div>
         
         <div style="padding: 1.5rem; text-align: center;">
-          <div id="qr-display-container">
+          <div style="background: white; padding: 1rem; border-radius: 0.5rem; display: inline-block; margin-bottom: 1rem;">
             <img src="${qrInfo.qrImageUrl}" alt="QR Code for ${produceData.name}" 
-                 style="max-width: 100%; height: auto; border-radius: 0.5rem; border: 1px solid var(--border-color);">
+                 style="max-width: 300px; height: auto; border-radius: 0.5rem;"
+                 id="qr-code-img">
           </div>
           
-          <div style="margin-top: 1rem; text-align: left; background: rgba(0,0,0,0.1); padding: 1rem; border-radius: 0.5rem;">
-            <h4>QR Code Contains:</h4>
-            <ul style="margin: 0.5rem 0;">
-              <li><strong>Produce:</strong> ${qrInfo.qrData.name}</li>
-              <li><strong>Quantity:</strong> ${qrInfo.qrData.quantity}</li>
-              <li><strong>Farmer:</strong> ${qrInfo.qrData.farmer}</li>
-              <li><strong>Farm:</strong> ${qrInfo.qrData.farm}</li>
-              <li><strong>Link:</strong> ${qrInfo.displayUrl}</li>
-            </ul>
+          <div style="margin-top: 1rem; text-align: left; background: rgba(16, 185, 129, 0.1); padding: 1rem; border-radius: 0.5rem; border: 1px solid rgba(16, 185, 129, 0.3);">
+            <h4 style="margin: 0 0 0.75rem 0; color: var(--success);">📱 QR Code Information</h4>
+            <div style="display: grid; gap: 0.5rem; font-size: 0.875rem;">
+              <div><strong>Product:</strong> ${qrInfo.qrData.name}</div>
+              <div><strong>Quantity:</strong> ${qrInfo.qrData.quantity}</div>
+              <div><strong>Farmer:</strong> ${qrInfo.qrData.farmer}</div>
+              <div><strong>Farm:</strong> ${qrInfo.qrData.farm}</div>
+              <div><strong>Product ID:</strong> ${qrInfo.qrData.id}</div>
+            </div>
           </div>
           
-          <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
-            <button onclick="downloadQRCode()" class="btn btn-primary" style="flex: 1;">
-              📱 Download QR Code
+          <div style="margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 0.5rem;">
+            <p style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: var(--text-secondary);">
+              <strong>Direct Link:</strong>
+            </p>
+            <a href="${qrInfo.displayUrl}" target="_blank" 
+               style="color: var(--primary-color); word-break: break-all; font-size: 0.813rem;">
+              ${qrInfo.displayUrl}
+            </a>
+          </div>
+          
+          <div style="margin-top: 1.5rem; display: flex; gap: 0.5rem;">
+            <button onclick="downloadQRCode('${qrInfo.qrImageUrl}', '${produceData.name}')" 
+                    class="btn btn-primary" style="flex: 1;">
+              💾 Download QR Code
             </button>
-            <button onclick="closeQRModal()" class="btn btn-outline" style="flex: 1;">
-              Close
+            <button onclick="shareQRCode('${qrInfo.displayUrl}')" 
+                    class="btn btn-outline" style="flex: 1;">
+              📤 Share Link
             </button>
           </div>
+          
+          <button onclick="closeQRModal()" class="btn btn-outline" style="width: 100%; margin-top: 0.5rem;">
+            Close
+          </button>
         </div>
       </div>
     </div>
@@ -553,21 +570,86 @@ function closeQRModal() {
   }
 }
 
-function downloadQRCode() {
-  const qrImage = document.querySelector('#qr-display-container img');
-  if (qrImage) {
-    const link = document.createElement('a');
-    link.download = `produce-qr-${Date.now()}.png`;
-    link.href = qrImage.src;
-    link.click();
+// Updated download function to use Cloudinary URL
+function downloadQRCode(qrImageUrl, produceName) {
+  if (!qrImageUrl) {
+    utils.showAlert('QR code image not available', 'error');
+    return;
+  }
+  
+  // Download from Cloudinary URL
+  fetch(qrImageUrl)
+    .then(response => response.blob())
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${produceName.replace(/\s+/g, '-')}-qr-code-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      utils.showAlert('QR code downloaded successfully!', 'success');
+    })
+    .catch(error => {
+      console.error('Download error:', error);
+      // Fallback: open in new tab
+      window.open(qrImageUrl, '_blank');
+    });
+}
+
+// Share QR code link
+function shareQRCode(displayUrl) {
+  if (navigator.share) {
+    navigator.share({
+      title: 'Produce QR Code',
+      text: 'Scan this QR code to view produce details',
+      url: displayUrl
+    }).catch(err => {
+      console.log('Error sharing:', err);
+      copyToClipboard(displayUrl);
+    });
+  } else {
+    copyToClipboard(displayUrl);
   }
 }
 
-// Show QR code for existing produce
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        utils.showAlert('Link copied to clipboard!', 'success');
+      })
+      .catch(err => {
+        console.error('Failed to copy:', err);
+        fallbackCopyToClipboard(text);
+      });
+  } else {
+    fallbackCopyToClipboard(text);
+  }
+}
+
+function fallbackCopyToClipboard(text) {
+  const tempInput = document.createElement('input');
+  tempInput.value = text;
+  document.body.appendChild(tempInput);
+  tempInput.select();
+  try {
+    document.execCommand('copy');
+    utils.showAlert('Link copied to clipboard!', 'success');
+  } catch (err) {
+    utils.showAlert('Failed to copy link', 'error');
+  }
+  document.body.removeChild(tempInput);
+}
+
+// Show QR code for existing produce - Updated to handle response properly
 async function showQRForProduce(produceId, produceName, quantity) {
   try {
+    utils.showAlert('Generating QR code...', 'info');
+    
     // Try to get QR code from backend
-    const response = await utils.apiCall(`/api/v1/produce/${produceId}/qr-code`, {
+    const response = await utils.apiCall(`/produce/${produceId}/qr-code`, {
       method: 'POST'
     });
 
@@ -578,7 +660,7 @@ async function showQRForProduce(produceId, produceName, quantity) {
       };
       showGeneratedQRCode(produceData, response.data.qrInfo);
     } else {
-      utils.showAlert('Failed to generate QR code', 'error');
+      throw new Error('Failed to generate QR code');
     }
   } catch (error) {
     console.error('Error generating QR code:', error);
@@ -589,4 +671,5 @@ async function showQRForProduce(produceId, produceName, quantity) {
 // Export global functions
 window.closeQRModal = closeQRModal;
 window.downloadQRCode = downloadQRCode;
+window.shareQRCode = shareQRCode;
 window.showQRForProduce = showQRForProduce;
