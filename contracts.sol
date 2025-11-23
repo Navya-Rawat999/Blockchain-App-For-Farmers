@@ -23,7 +23,7 @@ contract ProduceMarket {
         address seller;
         uint256 pricePaidInWei; // Renamed for clarity
         uint256 SaleTimeStamp;
-    }
+    } 
 
     // Mapping for product search by name
     mapping (string => uint256[]) public produceNameIndex;
