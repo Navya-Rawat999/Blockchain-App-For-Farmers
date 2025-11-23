@@ -1,20 +1,20 @@
 # Kissan Sathi - Blockchain App for Farmers
 
 ## Table of Contents
-- [📝 Overview](#-overview)
-- [✨ Key Features](#-key-features)
-- [🛠 Tech Stack](#-tech-stack)
-- [⚙️ Installation](#-installation)
-- [🚀 How to Run](#-how-to-run)
-- [📂 Project Structure](#-project-structure)
-- [📸 Screenshots](#-screenshots)
-- [🔮 Future Improvements](#-future-improvements)
+- [ Overview](#-overview)
+- [ Key Features](#-key-features)
+- [ Tech Stack](#-tech-stack)
+- [ Installation](#-installation)
+- [ How to Run](#-how-to-run)
+- [ Project Structure](#-project-structure)
+- [ Screenshots](#-screenshots)
+- [ Future Improvements](#-future-improvements)
 
 
-## 📝 Overview
+##  Overview
 Kissan Sathi is a decentralized application (dApp) designed to empower farmers by leveraging blockchain technology. It aims to eliminate middlemen, ensure fair pricing, and provide a transparent supply chain for agricultural produce. By recording transactions on an immutable ledger, the platform fosters trust between farmers and buyers.
 
-## ✨ Key Features
+##  Key Features
 - **Decentralized Marketplace:** Direct connection between farmers and buyers.
 - **Smart Contracts:** Automated agreements for payments and delivery conditions.
 - **Supply Chain Transparency:** Track produce from farm to table.
@@ -29,7 +29,7 @@ Kissan Sathi is a decentralized application (dApp) designed to empower farmers b
 - **Database:** MongoDB / IPFS (for file storage)
 - **Tools:** Truffle / Hardhat, MetaMask
 
-## ⚙️ Installation
+##  Installation
 
 ### Prerequisites
 - Node.js (v14 or higher)
@@ -68,7 +68,7 @@ Kissan Sathi is a decentralized application (dApp) designed to empower farmers b
    REACT_APP_CONTRACT_ADDRESS=your_contract_address
    ```
 
-## 🚀 How to Run
+##  How to Run
 1. Start the local blockchain node (if using Hardhat/Ganache).
 2. Start the frontend application:
    ```bash
@@ -76,7 +76,7 @@ Kissan Sathi is a decentralized application (dApp) designed to empower farmers b
    ```
 3. Open your browser and connect MetaMask to the local network.
 
-## 📂 Project Structure
+##  Project Structure
 ```
 Blockchain-App-For-Farmers-1/
 ├── blockchain/         # Smart contracts and deployment scripts
@@ -93,4 +93,5 @@ Blockchain-App-For-Farmers-1/
 - Integration with IoT devices for real-time crop monitoring.
 - Mobile application development (React Native).
 - Multi-language support for wider accessibility.
+
 
