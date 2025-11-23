@@ -21,7 +21,6 @@ Kissan Sathi is a decentralized application (dApp) designed to empower farmers b
 - **Secure Identity:** Blockchain-based verification for users.
 
 ## 🛠 Tech Stack
-*(Please update based on your actual code)*
 - **Frontend:** React.js / Next.js
 - **Blockchain:** Ethereum / Polygon / Hyperledger
 - **Smart Contracts:** Solidity
@@ -93,6 +92,7 @@ Blockchain-App-For-Farmers-1/
 - Integration with IoT devices for real-time crop monitoring.
 - Mobile application development (React Native).
 - Multi-language support for wider accessibility.
+
 
 
 
