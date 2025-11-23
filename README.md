@@ -89,9 +89,10 @@ Blockchain-App-For-Farmers-1/
 ```
 
 
-## 🔮 Future Improvements
+## Future Improvements
 - Integration with IoT devices for real-time crop monitoring.
 - Mobile application development (React Native).
 - Multi-language support for wider accessibility.
+
 
 
