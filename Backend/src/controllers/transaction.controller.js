@@ -44,6 +44,8 @@ const recordTransaction = asyncHandler(async (req, res) => {
     networkId
   } = req.body;
 
+  console.log('Recording transaction:', { produceId, blockchainTransactionHash, transactionType });
+
   const userId = req.user._id;
 
   // Validation
@@ -57,21 +59,27 @@ const recordTransaction = asyncHandler(async (req, res) => {
   });
 
   if (existingTransaction) {
+    console.log('Transaction already recorded:', blockchainTransactionHash);
     return res.status(200).json(
       new ApiResponse(200, existingTransaction, "Transaction already recorded")
     );
   }
 
-  // Verify produce exists
-  const produceItem = await ProduceItem.findOne({
-    $or: [
-      { blockchainId: produceId },
-      { id: parseInt(produceId) || 0 }
-    ]
-  });
-
-  if (!produceItem) {
-    throw new ApiError(404, "Produce item not found");
+  // Verify produce exists (optional - don't fail if not found)
+  let produceItem = null;
+  try {
+    produceItem = await ProduceItem.findOne({
+      $or: [
+        { blockchainId: produceId },
+        { id: parseInt(produceId) || 0 }
+      ]
+    });
+    
+    if (!produceItem) {
+      console.warn(`Produce item ${produceId} not found in database`);
+    }
+  } catch (error) {
+    console.error('Error finding produce item:', error);
   }
 
   // Create transaction record
@@ -82,17 +90,19 @@ const recordTransaction = asyncHandler(async (req, res) => {
     userId,
     buyerAddress,
     sellerAddress,
-    amountInWei,
-    gasFeeInWei,
-    productName: productName || produceItem.name,
-    productStatus: productStatus || produceItem.currentStatus,
-    blockNumber,
-    networkId: networkId || 1,
+    amountInWei: amountInWei || '0',
+    gasFeeInWei: gasFeeInWei || '0',
+    productName: productName || (produceItem?.name) || 'Unknown Product',
+    productStatus: productStatus || (produceItem?.currentStatus) || 'Unknown',
+    blockNumber: blockNumber || 0,
+    networkId: networkId || 11155111,
     status: 'confirmed'
   });
 
+  console.log('Transaction recorded successfully:', transaction._id);
+
   // Handle sold produce - mark as sold when it's a sale transaction
-  if (transactionType === 'sale' && buyerAddress) {
+  if (transactionType === 'sale' && buyerAddress && produceItem) {
     try {
       await markProduceAsSold(produceId, buyerAddress, blockchainTransactionHash);
       console.log(`Produce ${produceId} marked as sold to ${buyerAddress}`);

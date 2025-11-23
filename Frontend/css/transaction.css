@@ -292,6 +292,30 @@
   text-decoration: underline;
 }
 
+/* Blockchain info simplified */
+.blockchain-info {
+  font-size: 0.875rem;
+}
+
+/* Gas Estimation */
+.gas-estimation {
+  background: rgba(79, 70, 229, 0.1);
+  border: 1px solid rgba(79, 70, 229, 0.3);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.gas-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  font-size: 0.813rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .transaction-container {

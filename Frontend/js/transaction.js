@@ -131,7 +131,6 @@ async function displayTransactionDetails() {
   // Blockchain information
   const network = await provider.getNetwork();
   document.getElementById('network-name').textContent = centralizedWallet.getNetworkName(Number(network.chainId));
-  document.getElementById('contract-address').textContent = formatAddress(centralizedWallet.getContractAddress());
 }
 
 // Check if wallet has sufficient balance
@@ -198,7 +197,7 @@ window.confirmTransaction = async function() {
 
     // Record transaction in backend
     try {
-      await utils.apiCall('/api/v1/transactions/record', {
+      const recordResponse = await utils.apiCall('/api/v1/transactions/record', {
         method: 'POST',
         body: JSON.stringify({
           produceId: currentProduct.id,
@@ -206,16 +205,19 @@ window.confirmTransaction = async function() {
           transactionType: 'sale',
           buyerAddress: centralizedWallet.getAddress(),
           sellerAddress: currentProduct.currentSeller,
-          amountInWei: currentProduct.priceInWei,
-          gasFeeInWei: (BigInt(receipt.gasUsed) * BigInt(receipt.gasPrice || 0)).toString(),
+          amountInWei: currentProduct.priceInWei.toString(),
+          gasFeeInWei: (BigInt(receipt.gasUsed) * BigInt(receipt.gasPrice || receipt.effectiveGasPrice || 0)).toString(),
           productName: currentProduct.name,
           productStatus: 'Sold',
           blockNumber: receipt.blockNumber,
           networkId: centralizedWallet.networkId
         })
       });
+      
+      console.log('Transaction recorded in backend:', recordResponse);
     } catch (dbError) {
-      console.log('Failed to record transaction in backend:', dbError);
+      console.error('Failed to record transaction in backend:', dbError);
+      utils.showAlert('Transaction successful but failed to record in database', 'warning');
     }
 
     // Store transaction data for success page

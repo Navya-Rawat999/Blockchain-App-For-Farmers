@@ -302,6 +302,31 @@ window.confirmTransaction = async function() {
       console.log('Failed to update database, but blockchain transaction succeeded:', dbError);
     }
 
+    // Record transaction in backend
+    try {
+      const recordResponse = await utils.apiCall('/api/v1/transactions/record', {
+        method: 'POST',
+        body: JSON.stringify({
+          produceId: currentProduct.id,
+          blockchainTransactionHash: receipt.hash,
+          transactionType: 'sale',
+          buyerAddress: centralizedWallet.getAddress(),
+          sellerAddress: currentProduct.currentSeller,
+          amountInWei: currentProduct.priceInWei.toString(),
+          gasFeeInWei: (BigInt(receipt.gasUsed) * BigInt(receipt.gasPrice || receipt.effectiveGasPrice || 0)).toString(),
+          productName: currentProduct.name,
+          productStatus: 'Sold',
+          blockNumber: receipt.blockNumber,
+          networkId: centralizedWallet.networkId
+        })
+      });
+      
+      console.log('Transaction recorded in backend:', recordResponse);
+    } catch (dbError) {
+      console.error('Failed to record transaction in backend:', dbError);
+      utils.showAlert('Transaction successful but failed to record in database', 'warning');
+    }
+
     utils.showAlert('Purchase successful!', 'success');
 
   } catch (error) {

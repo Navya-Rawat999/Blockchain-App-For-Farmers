@@ -16,42 +16,51 @@
   <!-- Main Content -->
   <main class="main-content">
     <div class="container">
-  <div class="login-container">
-  <h1 class="login-title">Login</h1>
+      <div class="login-container">
+        <h1 class="login-title">Login to Kissan Sathi</h1>
 
-        <div id="alert-container"></div>
+        <div id="alert-container" style="margin-bottom: 1rem;"></div>
 
         <form id="login-form" class="card">
           <div class="form-group">
-            <label class="form-label" for="role">Login as</label>
+            <label class="form-label" for="role">
+              <span style="color: var(--error);">*</span> Login as
+            </label>
             <select id="role" name="role" class="form-select" required>
               <option value="">Select your role</option>
               <option value="farmer">Farmer</option>
               <option value="customer">Customer</option>
             </select>
+            <span class="form-help">Choose whether you're logging in as a farmer or customer</span>
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="username">Username</label>
+            <label class="form-label" for="username">
+              <span style="color: var(--error);">*</span> Username or Email
+            </label>
             <input 
               type="text" 
               id="username" 
               name="username" 
               class="form-input" 
-              placeholder="your-unique-username"
+              placeholder="Enter your username or email"
               required
+              autocomplete="username"
             >
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="password">Password</label>
+            <label class="form-label" for="password">
+              <span style="color: var(--error);">*</span> Password
+            </label>
             <input 
               type="password" 
               id="password" 
               name="password" 
               class="form-input" 
-              placeholder="••••••••"
+              placeholder="Enter your password"
               required
+              autocomplete="current-password"
             >
           </div>
 
@@ -59,9 +68,13 @@
             Login
           </button>
 
-          <div class="text-center mt-2 text-secondary">
-            <p>Don't have an account?</p>
-            <a href="register.html" class="primary-link">Create New Account</a>
+          <div class="text-center mt-2" style="padding-top: 1rem; border-top: 1px solid var(--border-color);">
+            <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">
+              Don't have an account?
+            </p>
+            <a href="register.html" class="primary-link" style="font-weight: 600;">
+              Create New Account →
+            </a>
           </div>
         </form>
       </div>

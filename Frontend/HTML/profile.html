@@ -16,62 +16,69 @@
   <nav id="navbar"></nav>
 
   <main class="main-content">
-    <div class="container">
-      <h1 class="section-title">🌾 My Farming Profile</h1>
-
+    <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 2rem 1rem;">
       <!-- Profile Header -->
       <div class="profile-header">
-        <div class="profile-avatar">
+        <div class="profile-avatar" id="profile-avatar">
           🌾
         </div>
-        <h2 id="profile-name">Loading...</h2>
-        <p id="profile-role" class="text-secondary">-</p>
+        <div style="flex: 1; text-align: center; position: relative; z-index: 1;">
+          <h2 id="profile-name" style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; color: white;">Loading...</h2>
+          <p id="profile-role" class="profile-role" style="font-size: 1.125rem; margin: 0;">-</p>
+        </div>
       </div>
 
       <!-- Stats Grid -->
       <div class="stats-grid">
         <div class="stat-card">
+          <div class="stat-icon">📦</div>
           <div class="stat-value" id="stat-products">0</div>
           <div class="stat-label">Products</div>
         </div>
         <div class="stat-card">
+          <div class="stat-icon">💳</div>
           <div class="stat-value" id="stat-transactions">0</div>
           <div class="stat-label">Transactions</div>
         </div>
       </div>
 
       <!-- Account Information -->
-      <div class="card mb-2">
-        <h2 class="section-title">📋 Account Information</h2>
+      <div class="card" style="margin-bottom: 2rem;">
+        <h2 class="section-title" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem;">
+          <span style="font-size: 1.5rem;">📋</span>
+          Account Information
+        </h2>
         
-        <div class="info-row">
-          <span class="info-label">Full Name</span>
-          <span class="info-value" id="info-fullname">-</span>
-        </div>
+        <div class="info-grid">
+          <div class="info-row">
+            <span class="info-label">👤 Full Name</span>
+            <span class="info-value" id="info-fullname">-</span>
+          </div>
 
-        <div class="info-row">
-          <span class="info-label">Email</span>
-          <span class="info-value" id="info-email">-</span>
-        </div>
+          <div class="info-row">
+            <span class="info-label">📧 Email</span>
+            <span class="info-value" id="info-email">-</span>
+          </div>
 
-        <div class="info-row">
-          <span class="info-label">Username</span>
-          <span class="info-value" id="info-username">-</span>
-        </div>
+          <div class="info-row">
+            <span class="info-label">🏷️ Username</span>
+            <span class="info-value" id="info-username">-</span>
+          </div>
 
-        <div class="info-row">
-          <span class="info-label">Role</span>
-          <span class="info-value" id="info-role">-</span>
-        </div>
+          <div class="info-row">
+            <span class="info-label">🎭 Role</span>
+            <span class="info-value" id="info-role">-</span>
+          </div>
 
-        <div class="info-row">
-          <span class="info-label">Member Since</span>
-          <span class="info-value" id="member-since">-</span>
+          <div class="info-row">
+            <span class="info-label">📅 Member Since</span>
+            <span class="info-value" id="member-since">-</span>
+          </div>
         </div>
 
         <!-- Account Actions -->
-        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-          <button id="logout-profile-btn" class="btn btn-outline w-100">
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+          <button id="logout-profile-btn" class="btn btn-outline" style="width: 100%; padding: 0.875rem; font-weight: 600;">
             🚪 Logout
           </button>
         </div>
@@ -79,9 +86,12 @@
 
       <!-- Transaction History -->
       <div class="card">
-        <div class="flex space-between align-center mb-1rem">
-          <h2 class="section-title" style="margin: 0;">📜 Transaction History</h2>
-          <button id="refresh-transactions-btn" class="btn btn-outline">
+        <div class="flex space-between align-center" style="margin-bottom: 1.5rem;">
+          <h2 class="section-title" style="display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+            <span style="font-size: 1.5rem;">📜</span>
+            Transaction History
+          </h2>
+          <button id="refresh-transactions-btn" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
             🔄 Refresh
           </button>
         </div>

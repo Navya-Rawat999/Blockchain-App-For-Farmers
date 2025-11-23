@@ -166,29 +166,14 @@
             </div>
           </div>
 
-          <!-- Blockchain Information -->
-          <div class="detail-section">
-            <h3 class="section-title">
-              <span class="section-icon">⛓️</span>
-              Blockchain Information
-            </h3>
-            <div class="detail-grid">
-              <div class="detail-item">
-                <span class="detail-label">Network</span>
-                <span class="detail-value" id="network-name">Loading...</span>
+          <!-- Blockchain Information - REMOVED, keeping only network info -->
+          <div class="blockchain-info" style="background: rgba(79, 70, 229, 0.1); border: 1px solid var(--primary-color); border-radius: 0.5rem; padding: 1rem; margin-top: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 1.25rem;">⛓️</span>
+                <span style="font-weight: 600;">Network:</span>
               </div>
-              <div class="detail-item">
-                <span class="detail-label">Contract Address</span>
-                <span class="detail-value" id="contract-address">Loading...</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Function Call</span>
-                <span class="detail-value">buyProduce(uint256)</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Transaction Type</span>
-                <span class="detail-value">Smart Contract Execution</span>
-              </div>
+              <span style="color: var(--primary-color); font-weight: 600;" id="network-name">Loading...</span>
             </div>
           </div>
         </div>

@@ -244,7 +244,32 @@ async function buyProduce(produceId, priceInWei) {
     
     utils.showAlert('Purchase transaction submitted. Waiting for confirmation...', 'warning');
     
-    await tx.wait();
+    const receipt = await tx.wait();
+    
+    // Record transaction in backend
+    try {
+      const recordResponse = await utils.apiCall('/api/v1/transactions/record', {
+        method: 'POST',
+        body: JSON.stringify({
+          produceId,
+          blockchainTransactionHash: receipt.hash,
+          transactionType: 'sale',
+          buyerAddress: centralizedWallet.getAddress(),
+          sellerAddress: await contract.produceSellers(produceId),
+          amountInWei: priceInWei.toString(),
+          gasFeeInWei: (BigInt(receipt.gasUsed) * BigInt(receipt.gasPrice || receipt.effectiveGasPrice || 0)).toString(),
+          productName: (await contract.getProduceDetails(produceId))[1],
+          productStatus: 'Sold',
+          blockNumber: receipt.blockNumber,
+          networkId: centralizedWallet.networkId
+        })
+      });
+      
+      console.log('Transaction recorded in backend:', recordResponse);
+    } catch (dbError) {
+      console.error('Failed to record transaction in backend:', dbError);
+    }
+    
     utils.showAlert('Purchase successful!', 'success');
     
     showRatingModal(produceId);

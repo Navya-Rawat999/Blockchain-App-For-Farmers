@@ -213,18 +213,6 @@ class CentralizedWallet {
     }
   }
 
-  // Helper method to record transactions
-  async recordTransaction(transactionData) {
-    try {
-      await utils.apiCall('/api/v1/transactions/record', {
-        method: 'POST',
-        body: JSON.stringify(transactionData)
-      });
-    } catch (error) {
-      console.error('Error recording transaction:', error);
-    }
-  }
-
   // Utility methods for easier access
   isWalletConnected() {
     return this.isConnected;

@@ -89,8 +89,8 @@ function displayTransactions(transactions) {
 
   const html = transactions.map(tx => {
     const date = new Date(tx.createdAt).toLocaleDateString();
-    // Approximate ETH conversion (1e18)
-    const ethAmount = (Number(tx.amountInWei) / 1e18).toFixed(4);
+    // Convert Wei to ETH (1 ETH = 10^18 Wei)
+    const ethAmount = tx.amountInWei ? (Number(tx.amountInWei) / Math.pow(10, 18)).toFixed(6) : '0.000000';
     
     return `
       <div class="transaction-item">
